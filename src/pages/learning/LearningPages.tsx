@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Navigate, useNavigate, Link } from 'react-router-dom';
 import { MOCK_COURSES } from '@/data/mockCourses';
+import { dbService } from '@/services/dbService';
 import { LessonSidebar } from '@/components/lesson/LessonSidebar';
 import { SvgDiagramViewer } from '@/components/lesson/SvgDiagramViewer';
 import { InterviewQuestionsSection } from '@/components/lesson/InterviewQuestionsSection';
@@ -86,11 +87,25 @@ export const LessonViewerPage: React.FC = () => {
 
   const isCompleted = completedLessonIds.includes(currentLesson.id);
 
-  const toggleCompletion = () => {
+  const toggleCompletion = async () => {
+    let updated: string[];
     if (isCompleted) {
-      setCompletedLessonIds((prev) => prev.filter((id) => id !== currentLesson.id));
+      updated = completedLessonIds.filter((id) => id !== currentLesson.id);
     } else {
-      setCompletedLessonIds((prev) => [...prev, currentLesson.id]);
+      updated = [...completedLessonIds, currentLesson.id];
+      // Record progress in Supabase user_progress table
+      await dbService.recordUserProgress(course.id, currentLesson.moduleId, currentLesson.id);
+    }
+    setCompletedLessonIds(updated);
+
+    // Save updated progress percentage to local storage for progress bar rendering
+    const progressPercent = Math.round((updated.length / Math.max(allLessons.length, 1)) * 100);
+    try {
+      const savedProgress = JSON.parse(localStorage.getItem('studypilot_course_progress') || '{}');
+      savedProgress[course.id] = progressPercent;
+      localStorage.setItem('studypilot_course_progress', JSON.stringify(savedProgress));
+    } catch {
+      localStorage.setItem('studypilot_course_progress', JSON.stringify({ [course.id]: progressPercent }));
     }
   };
 

@@ -100,8 +100,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, error: error.message };
-    await dbService.recordLoginUser(email, data.user?.user_metadata?.full_name || 'Student User', 'email');
+    
+    // Always store login attempt in Supabase login_users table
+    const name = data?.user?.user_metadata?.full_name || email.split('@')[0];
+    await dbService.recordLoginUser(email, name, 'email');
+
+    if (error) {
+      // Gracefully handle rate limits or auth errors
+      if (error.message.includes('rate') || error.message.includes('limit') || error.message.includes('exceeded')) {
+        demoLogin();
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    }
+
     localStorage.removeItem('studypilot_demo_session');
     setIsDemoUser(false);
     return { success: true };
@@ -117,8 +129,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password,
       options: { data: { full_name: fullName } },
     });
-    if (error) return { success: false, error: error.message };
+
+    // Always record registered user in Supabase login_users table
     await dbService.recordLoginUser(email, fullName, 'signup');
+
+    if (error) {
+      // Gracefully handle rate limits or email confirmation errors
+      if (error.message.includes('rate') || error.message.includes('limit') || error.message.includes('exceeded')) {
+        demoLogin();
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    }
+
     localStorage.removeItem('studypilot_demo_session');
     setIsDemoUser(false);
     return { success: true };
