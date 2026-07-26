@@ -104,11 +104,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
 
         {/* Action Buttons */}
         {(() => {
-          let enrolledList: string[] = ['dbms-101'];
+          let enrolledList: string[] = [];
           try {
-            enrolledList = JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+            const currentEmail = localStorage.getItem('studypilot_current_user_email') || '';
+            enrolledList = JSON.parse(localStorage.getItem(`studypilot_enrolled_${currentEmail}`) || '[]');
           } catch {
-            enrolledList = ['dbms-101'];
+            enrolledList = [];
           }
           const isEnrolled = enrolledList.includes(course.id);
 

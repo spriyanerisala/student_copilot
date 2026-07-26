@@ -77,6 +77,38 @@ export const AtsScorecard: React.FC<AtsScorecardProps> = ({ result }) => {
           </div>
         </div>
       </div>
+
+      {/* Detected Skills from File */}
+      {result.detectedSkills && result.detectedSkills.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            ✅ Skills Detected in Your Resume ({result.detectedSkills.length})
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {result.detectedSkills.map((skill) => (
+              <span key={skill} className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold capitalize">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Missing Skills */}
+      {result.missingSkills && result.missingSkills.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+            ❌ Missing High-Priority Skills ({result.missingSkills.length})
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {result.missingSkills.map((skill) => (
+              <span key={skill} className="px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[11px] font-semibold capitalize">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

@@ -12,82 +12,163 @@ export interface PdfSummaryOutput {
   mcqs: QuizQuestion[];
 }
 
+// Read file text content
+async function readFileText(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      resolve((e.target?.result as string) || '');
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsText(file);
+  });
+}
+
+// Extract sentences from text
+function extractSentences(text: string, maxCount: number = 5): string[] {
+  const sentences = text
+    .replace(/\n+/g, ' ')
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 40 && s.length < 300);
+  return sentences.slice(0, maxCount);
+}
+
+// Extract keywords/topic from file name and text
+function detectTopic(fileName: string, text: string): string {
+  const lower = (fileName + ' ' + text).toLowerCase();
+  if (lower.includes('dbms') || lower.includes('database') || lower.includes('sql')) return 'Database Management Systems (DBMS)';
+  if (lower.includes('machine learning') || lower.includes('neural') || lower.includes('deep learning')) return 'Machine Learning & Deep Learning';
+  if (lower.includes('system design') || lower.includes('microservice') || lower.includes('distributed')) return 'System Design & Architecture';
+  if (lower.includes('data structure') || lower.includes('algorithm') || lower.includes('dsa')) return 'Data Structures & Algorithms';
+  if (lower.includes('network') || lower.includes('tcp') || lower.includes('osi')) return 'Computer Networks';
+  if (lower.includes('operating system') || lower.includes('process') || lower.includes('memory management')) return 'Operating Systems';
+  if (lower.includes('cyber') || lower.includes('security') || lower.includes('encryption')) return 'Cybersecurity';
+  if (lower.includes('cloud') || lower.includes('aws') || lower.includes('kubernetes')) return 'Cloud Computing & DevOps';
+  if (lower.includes('python') || lower.includes('ai') || lower.includes('nlp')) return 'Artificial Intelligence & Python';
+  return fileName.replace(/\.(pdf|txt|doc|docx)$/i, '').replace(/[-_]/g, ' ');
+}
+
+// Generate dynamic flashcards from text content
+function generateFlashcards(topic: string, text: string, count: number = 5): { front: string; back: string }[] {
+  const sentences = extractSentences(text, 20);
+  const pairs: { front: string; back: string }[] = [];
+
+  // Try to extract definition-like patterns
+  const defPatterns = text.match(/([A-Z][^.!?]{10,80})\s+(?:is|are|refers to|means|defined as)\s+([^.!?]{20,200})[.!?]/g);
+  if (defPatterns) {
+    for (const match of defPatterns.slice(0, 3)) {
+      const parts = match.split(/\s+(?:is|are|refers to|means|defined as)\s+/);
+      if (parts.length === 2) {
+        pairs.push({ front: `What ${parts[0].toLowerCase()}?`, back: parts[1].replace(/[.!?]$/, '').trim() });
+      }
+    }
+  }
+
+  // Fill with topic-based generic flashcards
+  const topicCards: { front: string; back: string }[] = [
+    { front: `What is the main concept covered in this ${topic} document?`, back: sentences[0] || `This document covers core principles of ${topic}.` },
+    { front: `Name 3 key points from this ${topic} material.`, back: sentences.slice(1, 4).join('; ') || `Key points include definitions, mechanisms, and applications of ${topic}.` },
+    { front: `What is the practical application of ${topic}?`, back: `${topic} is applied in real-world systems to improve efficiency, reliability, and performance.` },
+    { front: `What are the advantages of ${topic}?`, back: `${topic} provides structured approaches to solving complex engineering and computational problems.` },
+    { front: `How does ${topic} relate to software engineering?`, back: `${topic} forms the foundation for building scalable, maintainable, and efficient software systems.` },
+  ];
+
+  for (const card of topicCards) {
+    if (pairs.length < count) pairs.push(card);
+  }
+
+  return pairs.slice(0, count);
+}
+
+// Generate dynamic MCQs
+function generateMCQs(topic: string, pdfId: string): QuizQuestion[] {
+  return [
+    {
+      id: `${pdfId}-q1`,
+      quizId: `${pdfId}-quiz`,
+      questionText: `Which of the following best describes the primary purpose of ${topic}?`,
+      options: [
+        `To provide theoretical understanding of abstract concepts`,
+        `To enable structured, efficient, and scalable solutions to real-world problems`,
+        `To memorize formulas without practical application`,
+        `To replace manual processes entirely`,
+      ],
+      correctOption: 1,
+      explanation: `${topic} exists to solve real-world engineering problems in a structured and scalable manner.`,
+    },
+    {
+      id: `${pdfId}-q2`,
+      quizId: `${pdfId}-quiz`,
+      questionText: `Which skill area does ${topic} strengthen the most for engineering interviews?`,
+      options: [
+        'UI/UX Design patterns',
+        'Database schema modeling',
+        'Problem-solving, optimization & system reasoning',
+        'Business analytics',
+      ],
+      correctOption: 2,
+      explanation: `${topic} improves technical problem-solving and reasoning which are core skills tested in SDE interviews.`,
+    },
+  ];
+}
+
 export const pdfService = {
   async uploadAndProcessPdf(file: File): Promise<PdfSummaryOutput> {
-    // Simulate Supabase Storage upload and AI document processing pipeline
-    await new Promise((res) => setTimeout(res, 1800));
+    // Read actual file content
+    const fileText = await readFileText(file);
 
-    const fileName = file.name || 'DBMS_Advanced_Indexing_Chapter_4.pdf';
-    const fileSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    // Small delay for UI processing state
+    await new Promise((res) => setTimeout(res, 1500));
+
+    const fileName = file.name || 'document.pdf';
+    const fileSize = file.size > 0 ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '< 0.1 MB';
+    const hasContent = fileText.trim().length > 50;
+    const topic = detectTopic(fileName, fileText);
+
+    // Build summary from actual file content if available
+    const sentences = extractSentences(fileText, 5);
+    const summary = hasContent && sentences.length > 0
+      ? `This document on "${topic}" covers: ${sentences.slice(0, 2).join('. ')}.`
+      : `This document covers core concepts, principles, and applications of ${topic} with practical examples and theoretical foundations.`;
+
+    // Key points from extracted sentences
+    const keyPoints = hasContent && sentences.length > 2
+      ? sentences.slice(0, 5).map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      : [
+          `Understanding the fundamental principles of ${topic}.`,
+          `Practical applications of ${topic} in real-world engineering scenarios.`,
+          `Performance optimization strategies related to ${topic}.`,
+          `Common pitfalls and best practices when working with ${topic}.`,
+          `Interview-level depth questions and model answers on ${topic}.`,
+        ];
+
+    // Study notes
+    const notes = [
+      `Always review both theoretical definitions and practical implementations of ${topic}.`,
+      `Cross-reference this material with your enrolled course modules for maximum retention.`,
+      `Practice MCQs below to test your understanding of key concepts from this document.`,
+    ];
+
+    const pdfId = `pdf-${Date.now()}`;
+    const flashcards = generateFlashcards(topic, fileText, 5);
+    const mcqs = generateMCQs(topic, pdfId);
 
     return {
-      id: `pdf-${Date.now()}`,
+      id: pdfId,
       fileName,
       fileSize,
-      uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      summary:
-        'This document covers advanced Relational Database Management concepts, focusing on B+ Tree Indexing algorithms, BCNF Normalization trade-offs, and ACID transaction isolation levels in distributed database systems.',
-      keyPoints: [
-        'B+ Trees maintain balanced heights O(log N) for both point lookups and range scans.',
-        'Third Normal Form (3NF) eliminates transitive functional dependencies.',
-        'BCNF is stricter than 3NF and requires every determinant to be a candidate key.',
-        'Isolation levels (Read Uncommitted, Read Committed, Repeatable Read, Serializable) prevent dirty reads and phantom reads.',
-      ],
-      notes: [
-        'Always create secondary indexes on frequently filtered foreign key columns.',
-        'Serializable isolation level provides maximum consistency but incurs heavy lock contention.',
-        'WAL (Write-Ahead Logging) ensures durability before writing data pages to disk.',
-      ],
-      flashcards: [
-        { front: 'What is the main difference between B-Tree and B+ Tree?', back: 'In B+ Trees, all data records are stored in leaf nodes, connected sequentially as a linked list.' },
-        { front: 'What anomaly does Repeatable Read isolation level prevent?', back: 'Prevents Non-Repeatable Reads (unrepeatable row values during same transaction).' },
-        { front: 'What defines BCNF compliance?', back: 'For every functional dependency X -> Y, X must be a super key.' },
-      ],
-      mcqs: [
-        {
-          id: 'pdf-q1',
-          quizId: 'pdf-quiz-1',
-          questionText: 'What is the primary advantage of B+ Tree leaf node linked lists?',
-          options: ['Fast single point lookups', 'Extremely fast sequential range scans', 'Zero memory overhead', 'Automatic encryption'],
-          correctOption: 1,
-          explanation: 'Leaf nodes form a doubly-linked list, allowing sequential range queries without tree re-traversal.',
-        },
-        {
-          id: 'pdf-q2',
-          quizId: 'pdf-quiz-1',
-          questionText: 'Which isolation level completely prevents Phantom Reads?',
-          options: ['Read Uncommitted', 'Read Committed', 'Repeatable Read', 'Serializable'],
-          correctOption: 3,
-          explanation: 'Serializable uses range locks or multiversion concurrency control (MVCC) to prevent phantom insertions.',
-        },
-      ],
+      uploadDate: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
+      summary,
+      keyPoints,
+      notes,
+      flashcards,
+      mcqs,
     };
   },
 
   getSavedPdfs(): PdfSummaryOutput[] {
-    return [
-      {
-        id: 'pdf-1',
-        fileName: 'DBMS_Advanced_Indexing_Chapter_4.pdf',
-        fileSize: '3.4 MB',
-        uploadDate: 'Jul 24, 2026',
-        summary: 'Deep dive into B+ Trees, Indexing Strategies, and Query Performance Optimization.',
-        keyPoints: ['B+ Tree O(log N) operations', 'Index selectivity guidelines'],
-        notes: ['Avoid indexing low cardinality boolean columns'],
-        flashcards: [{ front: 'What is Index Selectivity?', back: 'Ratio of distinct values to total table rows' }],
-        mcqs: [],
-      },
-      {
-        id: 'pdf-2',
-        fileName: 'System_Design_Rate_Limiting_Whitepaper.pdf',
-        fileSize: '5.1 MB',
-        uploadDate: 'Jul 20, 2026',
-        summary: 'Architecture paper on Token Bucket and Leaky Bucket API rate limiters with Redis.',
-        keyPoints: ['Token bucket burst handling', 'Distributed Redis Lua atomic operations'],
-        notes: ['Use HTTP 429 status code for throttled requests'],
-        flashcards: [{ front: 'Why use Lua scripts in Redis?', back: 'Ensures atomic execution without concurrency race conditions' }],
-        mcqs: [],
-      },
-    ];
+    // Return empty — each user's history is now dynamically built from uploaded files
+    return [];
   },
 };

@@ -54,9 +54,13 @@ export const stripeService = {
     const transactionId = `txn_${Math.random().toString(36).substring(2, 11)}`;
     const timestamp = new Date().toISOString();
 
+    // Get current user identity
+    const currentEmail = localStorage.getItem('studypilot_current_user_email') || 'guest';
+    const userId = `usr-${currentEmail.replace(/[^a-z0-9]/gi, '-')}`;
+
     // Persist payment record into Supabase `payments` table
     await dbService.recordPayment({
-      user_id: 'usr-demo-101',
+      user_id: userId,
       course_id: courseId,
       amount,
       currency: 'INR',
@@ -65,17 +69,18 @@ export const stripeService = {
     });
 
     // Record course enrollment into Supabase `enrolled_courses` table
-    await dbService.recordEnrollment(courseId, `Course Enrollment (${courseId})`, amount, 'INR');
+    await dbService.recordEnrollment(userId, courseId, `Course Enrollment (${courseId})`, amount, 'INR');
 
-    // Local state sync for instant unlocking
+    // Local state sync for instant unlocking — keyed per user
+    const enrollKey = `studypilot_enrolled_${currentEmail}`;
     try {
-      const savedEnrolled = JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+      const savedEnrolled = JSON.parse(localStorage.getItem(enrollKey) || '[]');
       if (!savedEnrolled.includes(courseId)) {
         savedEnrolled.push(courseId);
-        localStorage.setItem('studypilot_enrolled_courses', JSON.stringify(savedEnrolled));
+        localStorage.setItem(enrollKey, JSON.stringify(savedEnrolled));
       }
     } catch {
-      localStorage.setItem('studypilot_enrolled_courses', JSON.stringify(['dbms-101', courseId]));
+      localStorage.setItem(enrollKey, JSON.stringify([courseId]));
     }
 
     return {

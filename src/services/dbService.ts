@@ -128,44 +128,110 @@ export const dbService = {
     return !error;
   },
 
+  // Only called on LOGIN — NOT on signup
   async recordLoginUser(email: string, fullName: string, provider: string = 'email'): Promise<boolean> {
     if (!isSupabaseConfigured) return true;
-    const { error } = await supabase.from('login_users').insert([
-      {
-        email,
-        full_name: fullName,
-        login_provider: provider,
-        last_login: new Date().toISOString(),
-      },
-    ]);
+    const { error } = await supabase.from('login_users').upsert(
+      [
+        {
+          email,
+          full_name: fullName,
+          login_provider: provider,
+          last_login: new Date().toISOString(),
+        },
+      ],
+      { onConflict: 'email' }
+    );
     return !error;
   },
 
-  async recordEnrollment(courseId: string, courseTitle: string, amountPaid: number, currency: string = 'INR'): Promise<boolean> {
+  async recordEnrollment(
+    userId: string,
+    courseId: string,
+    courseTitle: string,
+    amountPaid: number,
+    currency: string = 'INR'
+  ): Promise<boolean> {
     if (!isSupabaseConfigured) return true;
-    const { error } = await supabase.from('enrolled_courses').insert([
-      {
-        course_id: courseId,
-        course_title: courseTitle,
-        amount_paid: amountPaid,
-        currency,
-        progress_percent: 0,
-        is_completed: false,
-      },
-    ]);
+    const { error } = await supabase.from('enrolled_courses').upsert(
+      [
+        {
+          user_id: userId,
+          course_id: courseId,
+          course_title: courseTitle,
+          amount_paid: amountPaid,
+          currency,
+          progress_percent: 0,
+          is_completed: false,
+        },
+      ],
+      { onConflict: 'user_id,course_id' }
+    );
     return !error;
   },
 
-  async recordUserProgress(courseId: string, moduleId: string, lessonId: string): Promise<boolean> {
+  async recordUserProgress(
+    userId: string,
+    courseId: string,
+    moduleId: string,
+    lessonId: string
+  ): Promise<boolean> {
     if (!isSupabaseConfigured) return true;
-    const { error } = await supabase.from('user_progress').insert([
-      {
-        course_id: courseId,
-        module_id: moduleId,
-        lesson_id: lessonId,
-        is_completed: true,
-      },
-    ]);
+    const { error } = await supabase.from('user_progress').upsert(
+      [
+        {
+          user_id: userId,
+          course_id: courseId,
+          module_id: moduleId,
+          lesson_id: lessonId,
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+        },
+      ],
+      { onConflict: 'user_id,lesson_id' }
+    );
+    return !error;
+  },
+
+  // Called ONLY when student completes ALL modules of an enrolled course
+  async updateCourseCompletion(userId: string, courseId: string, progressPercent: number): Promise<boolean> {
+    if (!isSupabaseConfigured) return true;
+    const isFullyCompleted = progressPercent >= 100;
+    const { error } = await supabase
+      .from('enrolled_courses')
+      .update({
+        progress_percent: progressPercent,
+        is_completed: isFullyCompleted,
+        completed_at: isFullyCompleted ? new Date().toISOString() : null,
+      })
+      .eq('user_id', userId)
+      .eq('course_id', courseId);
+    return !error;
+  },
+
+  // Get enrolled courses for a specific user from Supabase
+  async getUserEnrolledCourses(userId: string): Promise<string[]> {
+    if (!isSupabaseConfigured) return [];
+    const { data, error } = await supabase
+      .from('enrolled_courses')
+      .select('course_id')
+      .eq('user_id', userId);
+    if (error || !data) return [];
+    return data.map((d) => d.course_id);
+  },
+
+  // Save user profile to user_profile table
+  async saveUserProfile(profile: {
+    id: string;
+    email: string;
+    full_name: string;
+    role: string;
+  }): Promise<boolean> {
+    if (!isSupabaseConfigured) return true;
+    const { error } = await supabase.from('user_profile').upsert(
+      [profile],
+      { onConflict: 'email' }
+    );
     return !error;
   },
 };

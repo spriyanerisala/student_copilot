@@ -68,12 +68,13 @@ export const LessonViewerPage: React.FC = () => {
   const course = MOCK_COURSES.find((c) => c.id === courseId) || MOCK_COURSES[0];
   if (!course) return <Navigate to="/marketplace" replace />;
 
-  // Check enrollment status
+  // Check enrollment status (user-specific)
   const getEnrolledCourses = (): string[] => {
     try {
-      return JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+      const currentEmail = localStorage.getItem('studypilot_current_user_email') || '';
+      return JSON.parse(localStorage.getItem(`studypilot_enrolled_${currentEmail}`) || '[]');
     } catch {
-      return ['dbms-101'];
+      return [];
     }
   };
 
@@ -93,20 +94,31 @@ export const LessonViewerPage: React.FC = () => {
       updated = completedLessonIds.filter((id) => id !== currentLesson.id);
     } else {
       updated = [...completedLessonIds, currentLesson.id];
-      // Record progress in Supabase user_progress table
-      await dbService.recordUserProgress(course.id, currentLesson.moduleId, currentLesson.id);
+
+      // Get current user identity
+      const currentEmail = localStorage.getItem('studypilot_current_user_email') || 'guest';
+      const userId = `usr-${currentEmail.replace(/[^a-z0-9]/gi, '-')}`;
+
+      // Record lesson progress in Supabase user_progress table
+      await dbService.recordUserProgress(userId, course.id, currentLesson.moduleId, currentLesson.id);
+
+      // Calculate new progress percentage
+      const progressPercent = Math.round((updated.length / Math.max(allLessons.length, 1)) * 100);
+
+      // Update course completion in Supabase when all lessons are done
+      await dbService.updateCourseCompletion(userId, course.id, progressPercent);
+
+      // Save updated progress percentage to user-specific localStorage
+      const progressKey = `studypilot_progress_${currentEmail}`;
+      try {
+        const savedProgress = JSON.parse(localStorage.getItem(progressKey) || '{}');
+        savedProgress[course.id] = progressPercent;
+        localStorage.setItem(progressKey, JSON.stringify(savedProgress));
+      } catch {
+        localStorage.setItem(progressKey, JSON.stringify({ [course.id]: progressPercent }));
+      }
     }
     setCompletedLessonIds(updated);
-
-    // Save updated progress percentage to local storage for progress bar rendering
-    const progressPercent = Math.round((updated.length / Math.max(allLessons.length, 1)) * 100);
-    try {
-      const savedProgress = JSON.parse(localStorage.getItem('studypilot_course_progress') || '{}');
-      savedProgress[course.id] = progressPercent;
-      localStorage.setItem('studypilot_course_progress', JSON.stringify(savedProgress));
-    } catch {
-      localStorage.setItem('studypilot_course_progress', JSON.stringify({ [course.id]: progressPercent }));
-    }
   };
 
   return (

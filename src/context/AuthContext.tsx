@@ -44,13 +44,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isDemoUser, setIsDemoUser] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check local storage for demo session first
+    // Restore user-specific profile from localStorage if session exists
     const savedDemo = localStorage.getItem('studypilot_demo_session');
-    if (savedDemo === 'true') {
-      setProfile(DEMO_USER);
-      setIsDemoUser(true);
-      setIsLoading(false);
-      return;
+    const currentEmail = localStorage.getItem('studypilot_current_user_email');
+    if (savedDemo === 'true' && currentEmail) {
+      try {
+        const savedProfile = JSON.parse(localStorage.getItem(`studypilot_profile_${currentEmail}`) || 'null');
+        if (savedProfile) {
+          setProfile(savedProfile);
+          setIsDemoUser(true);
+          setIsLoading(false);
+          return;
+        }
+      } catch {}
     }
 
     if (!isSupabaseConfigured) {
@@ -95,43 +101,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
-    // Record login attempt in Supabase login_users table
     let name = email.split('@')[0];
-    
-    // Check local registered users list
+    let userId = `usr-${email.replace(/[^a-z0-9]/gi, '-')}`;
+
+    // Check locally registered users list to get full name
     try {
       const registered = JSON.parse(localStorage.getItem('studypilot_registered_users') || '[]');
       const match = registered.find((u: { email: string }) => u.email.toLowerCase() === email.toLowerCase());
-      if (match) {
-        name = match.fullName || name;
-      }
+      if (match) name = match.fullName || name;
     } catch {}
-
-    await dbService.recordLoginUser(email, name, 'email');
 
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (!error && data?.user) {
-        setProfile({
-          id: data.user.id,
-          email: data.user.email || email,
-          fullName: data.user.user_metadata?.full_name || name,
-          role: 'student',
-          streakDays: 12,
-          totalStudyHours: 48.5,
-          placementScore: 84,
-          atsScore: 88,
-          createdAt: new Date().toISOString(),
-        });
-        localStorage.removeItem('studypilot_demo_session');
-        setIsDemoUser(false);
-        return { success: true };
+        userId = data.user.id;
+        name = data.user.user_metadata?.full_name || name;
       }
     }
 
-    // Fallback: Login user seamlessly with their registered name & email
-    setProfile({
-      id: `usr-${Date.now()}`,
+    const userProfile: import('@/types').UserProfile = {
+      id: userId,
       email,
       fullName: name.charAt(0).toUpperCase() + name.slice(1),
       role: 'student',
@@ -140,8 +129,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       placementScore: 84,
       atsScore: 88,
       createdAt: new Date().toISOString(),
+    };
+
+    // Record login in Supabase login_users — ONLY on actual login
+    await dbService.recordLoginUser(email, userProfile.fullName, 'email');
+    // Save profile to user_profile table
+    await dbService.saveUserProfile({
+      id: userId,
+      email,
+      full_name: userProfile.fullName,
+      role: 'student',
     });
+
+    // Persist user profile in user-specific localStorage key
+    localStorage.setItem(`studypilot_profile_${email}`, JSON.stringify(userProfile));
+    localStorage.setItem('studypilot_current_user_email', email);
     localStorage.setItem('studypilot_demo_session', 'true');
+    setProfile(userProfile);
     setIsDemoUser(true);
     setIsLoading(false);
     return { success: true };
@@ -151,13 +155,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Save to local registered users list so login always recognizes user
     try {
       const registered = JSON.parse(localStorage.getItem('studypilot_registered_users') || '[]');
-      registered.push({ email, password, fullName });
-      localStorage.setItem('studypilot_registered_users', JSON.stringify(registered));
+      const exists = registered.some((u: { email: string }) => u.email.toLowerCase() === email.toLowerCase());
+      if (!exists) {
+        registered.push({ email, password, fullName });
+        localStorage.setItem('studypilot_registered_users', JSON.stringify(registered));
+      }
     } catch {}
 
-    // Record registered user in Supabase login_users table
-    await dbService.recordLoginUser(email, fullName, 'signup');
-
+    // Try Supabase auth signup — do NOT record in login_users here
     if (isSupabaseConfigured) {
       await supabase.auth.signUp({
         email,
@@ -166,18 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    setProfile({
-      id: `usr-${Date.now()}`,
-      email,
-      fullName,
-      role: 'student',
-      streakDays: 12,
-      totalStudyHours: 48.5,
-      placementScore: 84,
-      atsScore: 88,
-      createdAt: new Date().toISOString(),
-    });
-
+    // Do NOT set profile or login here — user must go to Login page
     return { success: true };
   };
 
@@ -214,7 +208,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     }
+    const currentEmail = localStorage.getItem('studypilot_current_user_email');
     localStorage.removeItem('studypilot_demo_session');
+    localStorage.removeItem('studypilot_current_user_email');
+    if (currentEmail) {
+      localStorage.removeItem(`studypilot_profile_${currentEmail}`);
+    }
     setUser(null);
     setSession(null);
     setProfile(null);
