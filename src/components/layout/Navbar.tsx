@@ -4,6 +4,8 @@ import { Search, Bell, Sun, Moon, Sparkles, User, LogOut, BookOpen, Flame } from
 import { useTheme } from '@/context/ThemeContext';
 import { APP_NAME } from '@/utils/constants';
 
+import { useAuth } from '@/context/AuthContext';
+
 interface NavbarProps {
   onMobileMenuToggle?: () => void;
   showSidebarToggle?: boolean;
@@ -11,16 +13,16 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = () => {
   const { theme, toggleTheme } = useTheme();
+  const { profile, user, logout } = useAuth();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Mock user data for UI state
   const mockUser = {
-    name: 'Ahnaf Ibn Habib',
-    email: 'ahnaf@studypilot.ai',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    streak: 12,
+    name: profile?.fullName || user?.email?.split('@')[0] || 'Ahnaf Ibn Habib',
+    email: profile?.email || user?.email || 'ahnaf@studypilot.ai',
+    avatar: profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    streak: profile?.streakDays || 12,
   };
 
   return (
@@ -150,7 +152,8 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 </button>
                 <div className="my-1 border-t border-white/10" />
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await logout();
                     navigate('/login');
                     setShowProfileMenu(false);
                   }}

@@ -44,16 +44,38 @@ export const StickyEnrollCard: React.FC<StickyEnrollCardProps> = ({ course, onEn
       </div>
 
       {/* CTA Buttons */}
-      <div className="space-y-2">
-        <Button variant="primary" size="lg" className="w-full" onClick={onEnroll} leftIcon={<Lock className="w-4 h-4" />}>
-          Enroll Now & Unlock
-        </Button>
-        <Link to={`/course/${course.id}/lesson/${firstLessonId}`} className="block">
-          <Button variant="glass" size="md" className="w-full" leftIcon={<Play className="w-4 h-4 text-purple-400" />}>
-            Start Free Lesson Preview
-          </Button>
-        </Link>
-      </div>
+      {(() => {
+        let enrolledList: string[] = ['dbms-101'];
+        try {
+          enrolledList = JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+        } catch {
+          enrolledList = ['dbms-101'];
+        }
+        const isEnrolled = enrolledList.includes(course.id);
+
+        return (
+          <div className="space-y-2">
+            {isEnrolled ? (
+              <Link to={`/course/${course.id}/lesson/${firstLessonId}`} className="block">
+                <Button variant="secondary" size="lg" className="w-full bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+                  Enrolled ✓ Go to Course
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Button variant="primary" size="lg" className="w-full" onClick={onEnroll} leftIcon={<Lock className="w-4 h-4" />}>
+                  Enroll Now & Unlock
+                </Button>
+                <Link to={`/course/${course.id}/lesson/${firstLessonId}`} className="block">
+                  <Button variant="glass" size="md" className="w-full" leftIcon={<Play className="w-4 h-4 text-purple-400" />}>
+                    Start Free Lesson Preview
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Guarantee & Features list */}
       <div className="space-y-3 pt-4 border-t border-white/10 text-xs text-slate-300">

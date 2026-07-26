@@ -37,9 +37,13 @@ type ForgotFormValues = z.infer<typeof forgotSchema>;
 type ResetFormValues = z.infer<typeof resetSchema>;
 
 // --- LOGIN PAGE ---
+import { useLocation } from 'react-router-dom';
+
 export const LoginPage: React.FC = () => {
   const { login, loginWithGoogle, demoLogin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const registeredInfo = location.state as { registered?: boolean; name?: string } | null;
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -79,6 +83,13 @@ export const LoginPage: React.FC = () => {
         <h2 className="text-xl font-bold text-white">Welcome back</h2>
         <p className="text-xs text-slate-400">Sign in to your StudyPilot AI account</p>
       </div>
+
+      {registeredInfo?.registered && (
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>Account created for <strong>{registeredInfo.name}</strong>! Please sign in below.</span>
+        </div>
+      )}
 
       {authError && (
         <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
@@ -194,7 +205,7 @@ export const RegisterPage: React.FC = () => {
     const res = await registerAuth(data.email, data.password, data.fullName);
     setIsSubmitting(false);
     if (res.success) {
-      navigate('/dashboard');
+      navigate('/login', { state: { registered: true, name: data.fullName } });
     } else {
       setAuthError(res.error || 'Failed to create account');
     }

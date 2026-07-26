@@ -96,19 +96,48 @@ export const CourseDetailsPage: React.FC = () => {
     return <Navigate to="/marketplace" replace />;
   }
 
+  // Check if enrolled
+  let enrolledList: string[] = ['dbms-101'];
+  try {
+    enrolledList = JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+  } catch {
+    enrolledList = ['dbms-101'];
+  }
+  const isEnrolled = enrolledList.includes(course.id);
+
   const outcomes = [
-    'Master fundamental database principles, relational algebra, and SQL optimizations.',
-    'Design production-ready ER diagrams and map cardinality relationships cleanly.',
-    'Understand indexing strategies, transactions, ACID properties, and concurrency control.',
-    'Build high-performance database sharding and distributed database architectures.',
-    'Interact with 24/7 AI Mentors during every lesson for instant clarification.',
-    'Earn a verified Certificate of Completion with digital QR validation.',
+    `Master core concepts and principles of ${course.title}.`,
+    `Build production-ready projects and architectural diagrams.`,
+    `Understand real-world industry implementations, best practices, and performance tuning.`,
+    `Crack technical interview questions with 3D revision flashcards and practice assessments.`,
+    `Interact with 24/7 AI Mentors during every lesson module for instant clarification.`,
+    `Earn a verified Certificate of Completion with cryptographic QR code validation.`,
   ];
 
   return (
     <div className="space-y-8 select-none">
       {/* Header Banner */}
       <CourseHeaderBanner course={course} />
+
+      {/* Enrolled Success Callout Banner */}
+      {isEnrolled && (
+        <Card className="p-6 border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+              ✓
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">You are Enrolled in this Course! 🎉</h3>
+              <p className="text-xs text-slate-300">All 10 modules, 3D flashcards, quizzes, and 24/7 AI Mentor tutor are fully unlocked.</p>
+            </div>
+          </div>
+          <a href={`/course/${course.id}/lesson/l-${course.id}-m1`}>
+            <button className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg transition-all">
+              Go to Module 1 →
+            </button>
+          </a>
+        </Card>
+      )}
 
       {/* Main Grid: Content vs Sticky Checkout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

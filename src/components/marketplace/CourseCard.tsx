@@ -103,22 +103,46 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-2">
-          <Link to={`/course/${course.id}`}>
-            <Button variant="outline" size="sm" className="w-full text-[11px]">
-              Overview
-            </Button>
-          </Link>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => onEnroll(course)}
-            className="w-full text-[11px]"
-            rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-          >
-            Enroll Now
-          </Button>
-        </div>
+        {(() => {
+          let enrolledList: string[] = ['dbms-101'];
+          try {
+            enrolledList = JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+          } catch {
+            enrolledList = ['dbms-101'];
+          }
+          const isEnrolled = enrolledList.includes(course.id);
+
+          return (
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <Link to={`/course/${course.id}`}>
+                <Button variant="outline" size="sm" className="w-full text-[11px]">
+                  Overview
+                </Button>
+              </Link>
+              {isEnrolled ? (
+                <Link to={`/course/${course.id}`}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full text-[11px] bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  >
+                    Enrolled ✓
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onEnroll(course)}
+                  className="w-full text-[11px]"
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                >
+                  Enroll Now
+                </Button>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </Card>
   );
