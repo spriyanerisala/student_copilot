@@ -15,7 +15,7 @@ export interface StripePaymentSession {
 export const stripeService = {
   // Validate publishable key
   getStripePublishableKey(): string {
-    return import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51SpuOuAAjnNoxWg0_sandbox_key';
+    return import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
   },
 
   async createCheckoutSession(course: Course, promoCode?: string): Promise<StripePaymentSession> {
