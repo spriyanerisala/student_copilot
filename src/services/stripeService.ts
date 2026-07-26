@@ -15,11 +15,11 @@ export interface StripePaymentSession {
 export const stripeService = {
   // Validate publishable key
   getStripePublishableKey(): string {
-    return import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_studypilot_ai_mock_key_2026';
+    return import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51SpuOuAAjnNoxWg0_sandbox_key';
   },
 
   async createCheckoutSession(course: Course, promoCode?: string): Promise<StripePaymentSession> {
-    await new Promise((res) => setTimeout(res, 800));
+    await new Promise((res) => setTimeout(res, 600));
 
     let discountPercentage = 0;
     if (promoCode?.toUpperCase() === 'STUDENT50') {
@@ -29,8 +29,8 @@ export const stripeService = {
     }
 
     const basePrice = course.discountPrice ?? course.price;
-    const finalPrice = Number((basePrice * (1 - discountPercentage)).toFixed(2));
-    const discountApplied = Number((basePrice - finalPrice).toFixed(2));
+    const finalPrice = Math.round(basePrice * (1 - discountPercentage));
+    const discountApplied = Math.round(basePrice - finalPrice);
 
     return {
       sessionId: `cs_test_${Math.random().toString(36).substring(2, 11)}`,
@@ -39,7 +39,7 @@ export const stripeService = {
       originalPrice: course.price,
       discountPrice: finalPrice,
       discountApplied,
-      currency: 'usd',
+      currency: 'INR',
       status: 'pending',
     };
   },
@@ -49,7 +49,7 @@ export const stripeService = {
     courseId: string,
     amount: number
   ): Promise<{ transactionId: string; timestamp: string }> {
-    await new Promise((res) => setTimeout(res, 1200));
+    await new Promise((res) => setTimeout(res, 800));
 
     const transactionId = `txn_${Math.random().toString(36).substring(2, 11)}`;
     const timestamp = new Date().toISOString();
@@ -59,10 +59,13 @@ export const stripeService = {
       user_id: 'usr-demo-101',
       course_id: courseId,
       amount,
-      currency: 'usd',
+      currency: 'INR',
       stripe_payment_id: transactionId,
-      status: 'completed',
+      status: 'succeeded',
     });
+
+    // Record course enrollment into Supabase `enrolled_courses` table
+    await dbService.recordEnrollment(courseId, `Course Enrollment (${courseId})`, amount, 'INR');
 
     return {
       transactionId,

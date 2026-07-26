@@ -127,4 +127,45 @@ export const dbService = {
     const { error } = await supabase.from('payments').insert([payment]);
     return !error;
   },
+
+  async recordLoginUser(email: string, fullName: string, provider: string = 'email'): Promise<boolean> {
+    if (!isSupabaseConfigured) return true;
+    const { error } = await supabase.from('login_users').insert([
+      {
+        email,
+        full_name: fullName,
+        login_provider: provider,
+        last_login: new Date().toISOString(),
+      },
+    ]);
+    return !error;
+  },
+
+  async recordEnrollment(courseId: string, courseTitle: string, amountPaid: number, currency: string = 'INR'): Promise<boolean> {
+    if (!isSupabaseConfigured) return true;
+    const { error } = await supabase.from('enrolled_courses').insert([
+      {
+        course_id: courseId,
+        course_title: courseTitle,
+        amount_paid: amountPaid,
+        currency,
+        progress_percent: 0,
+        is_completed: false,
+      },
+    ]);
+    return !error;
+  },
+
+  async recordUserProgress(courseId: string, moduleId: string, lessonId: string): Promise<boolean> {
+    if (!isSupabaseConfigured) return true;
+    const { error } = await supabase.from('user_progress').insert([
+      {
+        course_id: courseId,
+        module_id: moduleId,
+        lesson_id: lessonId,
+        is_completed: true,
+      },
+    ]);
+    return !error;
+  },
 };

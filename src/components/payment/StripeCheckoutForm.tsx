@@ -66,26 +66,26 @@ export const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({ course, 
       <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
         <div className="flex items-center justify-between text-slate-300">
           <span className="font-semibold">{course.title}</span>
-          <span className="font-mono text-white font-bold">${course.price}</span>
+          <span className="font-mono text-white font-bold">{course.currency || '₹'}{course.price}</span>
         </div>
 
         {course.discountPrice && (
           <div className="flex items-center justify-between text-emerald-400">
             <span>Special Learner Discount</span>
-            <span>-${(course.price - course.discountPrice).toFixed(2)}</span>
+            <span>-{course.currency || '₹'}{(course.price - course.discountPrice).toFixed(0)}</span>
           </div>
         )}
 
         {promoApplied && session && session.discountApplied > 0 && (
           <div className="flex items-center justify-between text-purple-300 font-semibold">
             <span>Promo Coupon ({promoCode.toUpperCase()})</span>
-            <span>-${session.discountApplied}</span>
+            <span>-{course.currency || '₹'}{session.discountApplied}</span>
           </div>
         )}
 
         <div className="flex items-center justify-between pt-2 border-t border-white/10 text-sm font-bold text-white">
           <span>Total Due</span>
-          <span className="text-purple-300 font-mono text-base">${currentPrice}</span>
+          <span className="text-purple-300 font-mono text-base">{course.currency || '₹'}{currentPrice}</span>
         </div>
       </div>
 
@@ -137,7 +137,7 @@ export const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({ course, 
           className="w-full text-sm py-3"
           leftIcon={<Lock className="w-4 h-4" />}
         >
-          Pay ${currentPrice} USD & Unlock Course
+          Pay {course.currency || '₹'}{currentPrice} INR & Unlock Course
         </Button>
       </form>
     </Card>

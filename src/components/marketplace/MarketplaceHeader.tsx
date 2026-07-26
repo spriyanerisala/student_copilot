@@ -23,7 +23,17 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
   sortBy,
   onSortChange,
 }) => {
-  const categories = ['All', 'Computer Science', 'System Design', 'Full-Stack', 'AI & Machine Learning'];
+  const categories = [
+    'All',
+    'Computer Science',
+    'Full-Stack',
+    'AI & Automation',
+    'System Design',
+    'Security',
+    'Cloud & DevOps',
+    'AI & Machine Learning',
+    'QA & Testing',
+  ];
   const difficulties = ['All Difficulties', 'Beginner', 'Intermediate', 'Advanced'];
   const sortOptions = [
     { label: 'Most Popular', value: 'popular' },

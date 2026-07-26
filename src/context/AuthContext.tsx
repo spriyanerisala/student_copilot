@@ -99,8 +99,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       demoLogin();
       return { success: true };
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { success: false, error: error.message };
+    await dbService.recordLoginUser(email, data.user?.user_metadata?.full_name || 'Student User', 'email');
     localStorage.removeItem('studypilot_demo_session');
     setIsDemoUser(false);
     return { success: true };
@@ -117,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       options: { data: { full_name: fullName } },
     });
     if (error) return { success: false, error: error.message };
+    await dbService.recordLoginUser(email, fullName, 'signup');
     localStorage.removeItem('studypilot_demo_session');
     setIsDemoUser(false);
     return { success: true };

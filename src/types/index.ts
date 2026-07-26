@@ -78,6 +78,7 @@ export interface Course {
   totalDuration: string;
   price: number;
   discountPrice?: number;
+  currency?: string;
   enrolledCount: number;
   modules: CourseModule[];
   tags: string[];

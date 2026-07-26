@@ -93,11 +93,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnroll }) => {
           <div className="text-right">
             {course.discountPrice ? (
               <div className="flex items-center gap-1.5">
-                <span className="text-slate-400 line-through text-[11px]">${course.price}</span>
-                <span className="text-sm font-bold text-emerald-400">${course.discountPrice}</span>
+                <span className="text-slate-400 line-through text-[11px]">{course.currency || '₹'}{course.price}</span>
+                <span className="text-sm font-bold text-emerald-400">{course.currency || '₹'}{course.discountPrice}</span>
               </div>
             ) : (
-              <span className="text-sm font-bold text-white">${course.price}</span>
+              <span className="text-sm font-bold text-white">{course.currency || '₹'}{course.price}</span>
             )}
           </div>
         </div>

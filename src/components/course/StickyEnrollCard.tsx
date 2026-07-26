@@ -28,10 +28,10 @@ export const StickyEnrollCard: React.FC<StickyEnrollCardProps> = ({ course, onEn
       {/* Pricing Header */}
       <div className="space-y-1">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-extrabold text-white font-mono">${course.discountPrice ?? course.price}</span>
+          <span className="text-3xl font-extrabold text-white font-mono">{course.currency || '₹'}{course.discountPrice ?? course.price}</span>
           {course.discountPrice && (
             <>
-              <span className="text-sm text-slate-400 line-through">${course.price}</span>
+              <span className="text-sm text-slate-400 line-through">{course.currency || '₹'}{course.price}</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
                 {Math.round(((course.price - course.discountPrice) / course.price) * 100)}% OFF
               </span>
