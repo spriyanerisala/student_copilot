@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Bot, Award, BarChart3, Library } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Bot, BarChart3, Library } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export const MobileNav: React.FC = () => {
