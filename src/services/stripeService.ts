@@ -67,6 +67,17 @@ export const stripeService = {
     // Record course enrollment into Supabase `enrolled_courses` table
     await dbService.recordEnrollment(courseId, `Course Enrollment (${courseId})`, amount, 'INR');
 
+    // Local state sync for instant unlocking
+    try {
+      const savedEnrolled = JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+      if (!savedEnrolled.includes(courseId)) {
+        savedEnrolled.push(courseId);
+        localStorage.setItem('studypilot_enrolled_courses', JSON.stringify(savedEnrolled));
+      }
+    } catch {
+      localStorage.setItem('studypilot_enrolled_courses', JSON.stringify(['dbms-101', courseId]));
+    }
+
     return {
       transactionId,
       timestamp,

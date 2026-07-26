@@ -61,10 +61,23 @@ const SAMPLE_QUIZ_QUESTIONS: QuizQuestion[] = [
 // --- LESSON VIEWER PAGE ---
 export const LessonViewerPage: React.FC = () => {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
+  const navigate = useNavigate();
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(['l-dbms-1']);
 
   const course = MOCK_COURSES.find((c) => c.id === courseId) || MOCK_COURSES[0];
   if (!course) return <Navigate to="/marketplace" replace />;
+
+  // Check enrollment status
+  const getEnrolledCourses = (): string[] => {
+    try {
+      return JSON.parse(localStorage.getItem('studypilot_enrolled_courses') || '["dbms-101"]');
+    } catch {
+      return ['dbms-101'];
+    }
+  };
+
+  const enrolledList = getEnrolledCourses();
+  const isEnrolled = enrolledList.includes(course.id);
 
   const allLessons = course.modules.flatMap((m) => m.lessons);
   const currentLesson = allLessons.find((l) => l.id === lessonId) || allLessons[0];
@@ -101,16 +114,45 @@ export const LessonViewerPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              variant={isCompleted ? 'secondary' : 'primary'}
-              onClick={toggleCompletion}
-              leftIcon={<CheckCircle2 className={`w-4 h-4 ${isCompleted ? 'text-emerald-400' : ''}`} />}
-            >
-              {isCompleted ? 'Completed ✓' : 'Mark as Completed'}
-            </Button>
+            {isEnrolled ? (
+              <Button
+                size="sm"
+                variant={isCompleted ? 'secondary' : 'primary'}
+                onClick={toggleCompletion}
+                leftIcon={<CheckCircle2 className={`w-4 h-4 ${isCompleted ? 'text-emerald-400' : ''}`} />}
+              >
+                {isCompleted ? 'Completed ✓' : 'Mark as Completed'}
+              </Button>
+            ) : (
+              <Badge variant="warning">Preview Mode (Unenrolled)</Badge>
+            )}
           </div>
         </div>
+
+        {/* Lock Overlay Banner for Unenrolled Users */}
+        {!isEnrolled && (
+          <Card className="p-8 text-center space-y-4 border-2 border-purple-500/50 bg-gradient-to-b from-purple-950/60 via-slate-900 to-slate-900 shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-purple-600/30 text-purple-400 border border-purple-500/40 flex items-center justify-center mx-auto shadow-xl">
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-white">Full Course Modules Locked 🔒</h2>
+              <p className="text-xs text-slate-300 max-w-md mx-auto">
+                Pay <strong>{course.currency || '₹'}{course.discountPrice ?? course.price} INR</strong> via Stripe to unlock all {course.modules.length || 4} modules, 3D revision flashcards, SVG architecture diagrams, practice MCQs, and 24/7 AI Mentor assistance.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => navigate(`/marketplace`)}
+                leftIcon={<Sparkles className="w-4 h-4" />}
+              >
+                Pay {course.currency || '₹'}{course.discountPrice ?? course.price} via Stripe & Unlock Full Course
+              </Button>
+            </div>
+          </Card>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -149,19 +191,19 @@ export const LessonViewerPage: React.FC = () => {
           </div>
         </Card>
 
-        {currentLesson.interviewQuestions && (
+        {isEnrolled && currentLesson.interviewQuestions && (
           <InterviewQuestionsSection questions={currentLesson.interviewQuestions} />
         )}
 
-        {currentLesson.flashcards && (
+        {isEnrolled && currentLesson.flashcards && (
           <InteractiveFlashcards flashcards={currentLesson.flashcards} />
         )}
 
-        {currentLesson.practiceQuestions && (
+        {isEnrolled && currentLesson.practiceQuestions && (
           <PracticeQuestionsWidget questions={currentLesson.practiceQuestions} />
         )}
 
-        <AskAiDrawer lessonTitle={currentLesson.title} />
+        {isEnrolled && <AskAiDrawer lessonTitle={currentLesson.title} />}
       </main>
     </div>
   );
