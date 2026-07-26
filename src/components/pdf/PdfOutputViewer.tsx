@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import type { PdfSummaryOutput } from '@/services/pdfService';
-import { InteractiveFlashcards } from '@/components/lesson/InteractiveFlashcards';
-import { PracticeQuestionsWidget } from '@/components/lesson/PracticeQuestionsWidget';
-import { FileText, Sparkles, HelpCircle } from 'lucide-react';
+import { FileText, Sparkles } from 'lucide-react';
 import { Card, Tabs } from '@/components/ui';
 
 interface PdfOutputViewerProps {
