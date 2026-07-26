@@ -14,7 +14,6 @@ export const PdfOutputViewer: React.FC<PdfOutputViewerProps> = ({ output }) => {
 
   const tabs = [
     { id: 'summary', label: 'Executive Summary', icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'notes', label: 'Key Points & Notes', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'flashcards', label: 'Flashcards', icon: <Sparkles className="w-3.5 h-3.5" />, badge: output.flashcards.length },
     { id: 'mcqs', label: 'Practice MCQs', icon: <HelpCircle className="w-3.5 h-3.5" />, badge: output.mcqs.length },
   ];
@@ -52,37 +51,7 @@ export const PdfOutputViewer: React.FC<PdfOutputViewerProps> = ({ output }) => {
         </Card>
       )}
 
-      {/* Tab 2: Key Points & Notes */}
-      {activeTab === 'notes' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="p-6 space-y-4">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Key Bullet Takeaways
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-300">
-              {output.keyPoints.map((pt, idx) => (
-                <li key={idx} className="flex items-start gap-2 p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <span className="text-purple-400 font-bold">•</span>
-                  <span>{pt}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
 
-          <Card className="p-6 space-y-4">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-indigo-400" /> Detailed Revision Notes
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-300">
-              {output.notes.map((note, idx) => (
-                <li key={idx} className="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/20 text-purple-200">
-                  {note}
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
-      )}
 
       {/* Tab 3: Flashcards */}
       {activeTab === 'flashcards' && (

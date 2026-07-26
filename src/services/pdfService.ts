@@ -125,7 +125,7 @@ export const pdfService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook/summarize-pdf', {
+      const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook-test/summarize-pdf', {
         method: 'POST',
         body: formData,
       });

@@ -3,7 +3,16 @@ export interface ResumeAnalysisResult {
   fileName: string;
   fileSize: string;
   analyzedAt: string;
-  atsScore: number; // 0 - 100
+  atsScore: number;
+  n8nSummary?: string;
+  n8nMatchLevel?: string;
+  n8nStrengths?: string[];
+  n8nWeaknesses?: string[];
+  n8nMissingSkills?: string[];
+  n8nKeywordSuggestions?: string[];
+  n8nResumeImprovements?: string[];
+  n8nInterviewReadiness?: string;
+  n8nFinalRecommendation?: string;
   subScores: {
     keywordMatch: number;
     formatting: number;
@@ -83,7 +92,52 @@ function generateSuggestions(detected: string[], missing: string[]): string[] {
 
 export const resumeService = {
   async analyzeResume(file: File): Promise<ResumeAnalysisResult> {
-    // Read actual file content
+    let n8nSummary: string | undefined = undefined;
+    let n8nMatchLevel: string | undefined = undefined;
+    let n8nAtsScore: number | undefined = undefined;
+    let n8nStrengths: string[] | undefined = undefined;
+    let n8nWeaknesses: string[] | undefined = undefined;
+    let n8nMissingSkills: string[] | undefined = undefined;
+    let n8nKeywordSuggestions: string[] | undefined = undefined;
+    let n8nResumeImprovements: string[] | undefined = undefined;
+    let n8nInterviewReadiness: string | undefined = undefined;
+    let n8nFinalRecommendation: string | undefined = undefined;
+
+    // 1. Send the file to n8n Webhook for processing
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook/resume-analyser', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const textData = await res.text();
+        try {
+          const data = JSON.parse(textData);
+          if (data) {
+            if (data.summary) n8nSummary = data.summary;
+            if (data.matchLevel) n8nMatchLevel = data.matchLevel;
+            if (data.atsScore !== undefined) n8nAtsScore = Number(data.atsScore);
+            if (data.strengths) n8nStrengths = data.strengths;
+            if (data.weaknesses) n8nWeaknesses = data.weaknesses;
+            if (data.missingSkills) n8nMissingSkills = data.missingSkills;
+            if (data.keywordSuggestions) n8nKeywordSuggestions = data.keywordSuggestions;
+            if (data.resumeImprovements) n8nResumeImprovements = data.resumeImprovements;
+            if (data.interviewReadiness) n8nInterviewReadiness = data.interviewReadiness;
+            if (data.finalRecommendation) n8nFinalRecommendation = data.finalRecommendation;
+          }
+        } catch (e) {
+          console.warn("n8n response was not JSON:", textData);
+        }
+      }
+    } catch (err) {
+      console.warn('n8n resume analyzer webhook failed:', err);
+    }
+
+    // 2. Read actual file content for local fallback UI
     const fileText = await readFileText(file);
 
     // Give a small delay for UI processing state
@@ -143,7 +197,16 @@ export const resumeService = {
       fileName,
       fileSize,
       analyzedAt: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
-      atsScore,
+      atsScore: n8nAtsScore !== undefined ? n8nAtsScore : atsScore,
+      n8nSummary,
+      n8nMatchLevel,
+      n8nStrengths,
+      n8nWeaknesses,
+      n8nMissingSkills,
+      n8nKeywordSuggestions,
+      n8nResumeImprovements,
+      n8nInterviewReadiness,
+      n8nFinalRecommendation,
       subScores: {
         keywordMatch,
         formatting,
