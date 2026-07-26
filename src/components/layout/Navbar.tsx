@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Sparkles, User, LogOut, BookOpen, Flame } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Sparkles, User, LogOut, BookOpen, Flame, Menu } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { APP_NAME } from '@/utils/constants';
 
@@ -11,7 +11,7 @@ interface NavbarProps {
   showSidebarToggle?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = () => {
+export const Navbar: React.FC<NavbarProps> = ({ onMobileMenuToggle, showSidebarToggle }) => {
   const { theme, toggleTheme } = useTheme();
   const { profile, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -21,15 +21,30 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const mockUser = {
     name: profile?.fullName || user?.email?.split('@')[0] || 'Ahnaf Ibn Habib',
     email: profile?.email || user?.email || 'ahnaf@studypilot.ai',
-    avatar: profile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    avatar: profile?.avatarUrl || 'https://ui-avatars.com/api/?name=Ahnaf&background=8b5cf6&color=fff',
     streak: profile?.streakDays || 12,
+  };
+
+  const getInitials = (name: string) => {
+    const words = name.trim().split(' ').filter(Boolean);
+    if (words.length === 0) return 'U';
+    if (words.length === 1) return words[0][0].toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
   };
 
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-white/10 px-4 lg:px-8 py-3 transition-colors duration-300">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Left: Brand & Search */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
+          {showSidebarToggle && (
+            <button
+              onClick={onMobileMenuToggle}
+              className="md:hidden p-2 -ml-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-500 to-pink-500 p-0.5 shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
               <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
@@ -62,6 +77,14 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
         {/* Right: Actions, Streaks & Profile */}
         <div className="flex items-center gap-3">
+          {/* Dashboard Button */}
+          <Link
+            to="/dashboard"
+            className="flex items-center px-3 sm:px-4 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-200 text-xs font-bold transition-colors"
+          >
+            Dashboard
+          </Link>
+
           {/* Daily Streak Indicator */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold">
             <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
@@ -119,11 +142,9 @@ export const Navbar: React.FC<NavbarProps> = () => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-800/50 transition-all"
             >
-              <img
-                src={mockUser.avatar}
-                alt={mockUser.name}
-                className="w-8 h-8 rounded-lg object-cover ring-2 ring-purple-500/30"
-              />
+              <div className="w-8 h-8 rounded-lg ring-2 ring-purple-500/30 bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-md tracking-wider">
+                {getInitials(mockUser.name)}
+              </div>
             </button>
 
             {showProfileMenu && (

@@ -7,9 +7,10 @@ import { cn } from '@/utils/cn';
 interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  isMobileDrawer?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ collapsed: externalCollapsed }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ collapsed: externalCollapsed, isMobileDrawer }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed = externalCollapsed ?? internalCollapsed;
   const location = useLocation();
@@ -19,8 +20,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed: externalCollapsed }
   return (
     <aside
       className={cn(
-        'hidden md:flex flex-col justify-between glass-panel border-r border-white/10 h-[calc(100vh-65px)] sticky top-[65px] transition-all duration-300 z-30 select-none',
-        isCollapsed ? 'w-20 px-2 py-4' : 'w-64 p-4'
+        'flex flex-col justify-between glass-panel border-white/10 transition-all duration-300 z-30 select-none',
+        !isMobileDrawer && 'hidden md:flex border-r h-[calc(100vh-65px)] sticky top-[65px]',
+        isMobileDrawer ? 'w-full min-h-screen pt-[65px] border-none' : (isCollapsed ? 'w-20 px-2 py-4' : 'w-64 p-4')
       )}
     >
       {/* Top Nav List */}

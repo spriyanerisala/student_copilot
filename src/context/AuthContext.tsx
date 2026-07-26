@@ -25,7 +25,7 @@ const DEMO_USER: UserProfile = {
   id: 'demo-user-123',
   email: 'ahnaf@studypilot.ai',
   fullName: 'Ahnaf Ibn Habib',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  avatarUrl: 'https://ui-avatars.com/api/?name=Ahnaf&background=8b5cf6&color=fff',
   role: 'student',
   bio: 'Senior Full Stack Developer & AI Enthusiast',
   streakDays: 12,
@@ -222,6 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const demoLogin = () => {
     localStorage.setItem('studypilot_demo_session', 'true');
+    localStorage.setItem('studypilot_current_user_email', DEMO_USER.email);
     setProfile(DEMO_USER);
     setIsDemoUser(true);
     setIsLoading(false);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Bot, Award, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Bot, Award, BarChart3, Library } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export const MobileNav: React.FC = () => {
@@ -8,10 +8,10 @@ export const MobileNav: React.FC = () => {
 
   const mobileItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'My Courses', href: '/my-courses', icon: Library },
     { name: 'Courses', href: '/marketplace', icon: BookOpen },
     { name: 'AI Mentor', href: '/ai-mentor', icon: Bot, isAi: true },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Readiness', href: '/placement-readiness', icon: Award },
   ];
 
   return (

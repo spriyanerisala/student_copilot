@@ -13,6 +13,7 @@ import { LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage } from '
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { MarketplacePage, CourseDetailsPage } from '@/pages/marketplace/MarketplacePages';
 import { LessonViewerPage, QuizPage } from '@/pages/learning/LearningPages';
+import { MyCoursesPage } from '@/pages/learning/MyCoursesPage';
 import { AiMentorPage, PdfSummarizerPage, ResumeAnalyzerPage, MockInterviewPage } from '@/pages/ai/AiPages';
 import { CertificatePage } from '@/pages/certificate/CertificatePage';
 import { VerifyCertificatePage } from '@/pages/certificate/VerifyCertificatePage';
@@ -44,6 +45,7 @@ export const AppRoutes: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/my-courses" element={<MyCoursesPage />} />
           <Route path="/course/:courseId/lesson/:lessonId" element={<LessonViewerPage />} />
           <Route path="/quiz/:quizId" element={<QuizPage />} />
           <Route path="/ai-mentor" element={<AiMentorPage />} />

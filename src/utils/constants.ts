@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   BookOpen,
+  Library,
   Bot,
   FileText,
   FileSearch,
@@ -24,6 +25,7 @@ export interface NavItem {
 
 export const MAIN_NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'My Courses', href: '/my-courses', icon: Library },
   { name: 'Course Marketplace', href: '/marketplace', icon: BookOpen },
   { name: 'AI Mentor', href: '/ai-mentor', icon: Bot, isAi: true, badge: 'AI' },
   { name: 'PDF Summarizer', href: '/pdf-summarizer', icon: FileText, isAi: true },

@@ -6,7 +6,7 @@ const MOCK_PROFILE: UserProfile = {
   id: 'usr-101',
   email: 'ahnaf@studypilot.ai',
   fullName: 'Ahnaf Ibn Habib',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  avatarUrl: 'https://ui-avatars.com/api/?name=Ahnaf&background=8b5cf6&color=fff',
   role: 'student',
   bio: 'Computer Science Enthusiast & Full Stack Learner',
   streakDays: 12,
