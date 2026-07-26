@@ -58,7 +58,7 @@ export const runFullAppVerification = async (): Promise<TestResult[]> => {
   });
 
   // Module 13: AI Mentor
-  const aiResp = await aiService.sendMentorQuery('What is BCNF?', 'explain_simply');
+  const aiResp = await aiService.sendMentorQuery('What is 3NF?');
   results.push({
     moduleName: 'Module 13: Context-Aware AI Mentor',
     passed: aiResp.includes('Simplified Explanation'),

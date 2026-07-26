@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Send, Loader2, RefreshCw, Sparkles, FileSearch, Bot } from 'lucide-react';
-import { aiService, type AiMode, type ChatMessage } from '@/services/aiService';
+import { Send, Loader2, RefreshCw, Sparkles, FileSearch, Bot, MessageSquare } from 'lucide-react';
+import { aiService, type ChatMessage } from '@/services/aiService';
 import { pdfService, type PdfSummaryOutput } from '@/services/pdfService';
 import { resumeService, type ResumeAnalysisResult } from '@/services/resumeService';
 import { interviewService, type InterviewType, type TargetRole, type InterviewQuestionItem, type InterviewFeedbackResult } from '@/services/interviewService';
-import { AiMentorHeader } from '@/components/ai/AiMentorHeader';
-import { AiModePresets } from '@/components/ai/AiModePresets';
 import { AiChatMessage } from '@/components/ai/AiChatMessage';
 import { PdfUploader } from '@/components/pdf/PdfUploader';
 import { PdfOutputViewer } from '@/components/pdf/PdfOutputViewer';
@@ -20,7 +18,6 @@ import { Button, Input, Card } from '@/components/ui';
 
 // --- AI MENTOR PAGE ---
 export const AiMentorPage: React.FC = () => {
-  const [activeMode, setActiveMode] = useState<AiMode>('explain');
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,23 +25,10 @@ export const AiMentorPage: React.FC = () => {
     {
       id: 'msg-1',
       sender: 'ai',
-      text: 'Hello Ahnaf! I am your 24/7 AI Mentor for Database Management Systems & System Design. Select a mode above or ask any question to get started!',
-      timestamp: '1:10 PM',
+      text: 'Hello! I am your AI Chatbot. Ask me anything, and I will help you out!',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
-
-  const activeContext = {
-    courseTitle: 'Database Management Systems (DBMS)',
-    moduleTitle: 'Module 1: Relational Architecture',
-    lessonTitle: '1.1 DBMS Advantages & Normalization',
-    progressPercent: 65,
-    quizScorePercent: 92,
-  };
-
-  const handleSelectPreset = (mode: AiMode, defaultPrompt: string) => {
-    setActiveMode(mode);
-    setPrompt(defaultPrompt);
-  };
 
   const handleSubmitPrompt = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +41,6 @@ export const AiMentorPage: React.FC = () => {
       id: `usr-${Date.now()}`,
       sender: 'user',
       text: userText,
-      mode: activeMode,
       timestamp: timeStr,
     };
 
@@ -66,17 +49,23 @@ export const AiMentorPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const responseText = await aiService.sendMentorQuery(userText, activeMode, activeContext);
+      const responseText = await aiService.sendMentorQuery(userText);
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
         text: responseText,
-        mode: activeMode,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
       console.error(err);
+      const errorMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        sender: 'ai',
+        text: 'Sorry, I am having trouble connecting to the n8n backend right now.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +76,7 @@ export const AiMentorPage: React.FC = () => {
       {
         id: 'msg-1',
         sender: 'ai',
-        text: 'Chat history cleared. How can I assist you with your active DBMS lessons today?',
+        text: 'Chat history cleared. What would you like to talk about?',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -95,8 +84,16 @@ export const AiMentorPage: React.FC = () => {
 
   return (
     <div className="space-y-6 select-none max-w-5xl mx-auto flex flex-col h-[calc(100vh-120px)]">
-      <AiMentorHeader context={activeContext} />
-      <AiModePresets activeMode={activeMode} onSelectMode={handleSelectPreset} />
+      
+      <div className="flex items-center gap-3 pb-2 border-b border-white/10">
+        <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+          <MessageSquare className="w-5 h-5" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">AI Mentor Chat</h2>
+          <p className="text-xs text-slate-400">Powered by your custom n8n AI Agent</p>
+        </div>
+      </div>
 
       <Card className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-950/60 border border-white/10 flex flex-col justify-between">
         <div className="space-y-4">
@@ -107,7 +104,7 @@ export const AiMentorPage: React.FC = () => {
           {isLoading && (
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-950/20 border border-purple-500/30 text-purple-300 text-xs w-fit">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>AI Mentor is crafting your response...</span>
+              <span>AI is thinking...</span>
             </div>
           )}
         </div>
@@ -118,7 +115,7 @@ export const AiMentorPage: React.FC = () => {
           <Input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ask AI Mentor anything about your current lesson or quiz..."
+            placeholder="Type your message here..."
             className="text-xs py-3"
           />
           <Button type="submit" isLoading={isLoading} className="px-6" rightIcon={<Send className="w-4 h-4" />}>
@@ -127,7 +124,7 @@ export const AiMentorPage: React.FC = () => {
         </form>
 
         <div className="flex justify-between items-center text-[10px] text-slate-500 px-2">
-          <span>AI understands: Current Lesson, Active Module, Progress % & Quiz Scores</span>
+          <span>AI will respond based on your n8n workflow logic.</span>
           <button onClick={handleClearHistory} className="hover:text-slate-300 flex items-center gap-1">
             <RefreshCw className="w-3 h-3" /> Clear Chat
           </button>
