@@ -125,7 +125,7 @@ export const pdfService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook-test/summarize-pdf', {
+      const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook/summarize-pdf', {
         method: 'POST',
         body: formData,
       });
@@ -133,16 +133,19 @@ export const pdfService = {
       if (res.ok) {
         const textData = await res.text();
         try {
-          // Try to parse as JSON first (if user sent { "summary": "..." })
+          // Try to parse as JSON first
           const data = JSON.parse(textData);
+          // Check if n8n returned it under "summary" OR "output"
           if (data && data.summary) {
-            n8nSummary = data.summary;
+            n8nSummary = data.summary.trim();
+          } else if (data && data.output) {
+            n8nSummary = data.output.trim();
           } else {
-            n8nSummary = textData; // Fallback to raw text if no summary field
+            n8nSummary = textData.trim(); // Fallback to raw text if neither field exists
           }
         } catch (e) {
-          // If JSON parsing fails (e.g. unescaped quotes/newlines), use the raw text
-          n8nSummary = textData;
+          // If JSON parsing fails, use the raw text safely (which matches your 'Text' setting exactly)
+          n8nSummary = textData.trim();
         }
       }
     } catch (err) {
@@ -161,6 +164,10 @@ export const pdfService = {
       : (hasContent && sentences.length > 0
           ? `This document on "${topic}" covers: ${sentences.slice(0, 2).join('. ')}.`
           : `This document covers core concepts, principles, and applications of ${topic} with practical examples and theoretical foundations.`);
+
+    // DEBUG LOGS FOR n8n WEBHOOK
+    console.log("n8nSummary =", n8nSummary);
+    console.log("finalSummary =", finalSummary);
 
     // Key points from extracted sentences
     const keyPoints = hasContent && sentences.length > 2
