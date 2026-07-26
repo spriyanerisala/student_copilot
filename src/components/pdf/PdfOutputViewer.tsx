@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { PdfSummaryOutput } from '@/services/pdfService';
 import { InteractiveFlashcards } from '@/components/lesson/InteractiveFlashcards';
 import { PracticeQuestionsWidget } from '@/components/lesson/PracticeQuestionsWidget';
-import { FileText, CheckCircle2, BookOpen, Sparkles, HelpCircle } from 'lucide-react';
+import { FileText, Sparkles, HelpCircle } from 'lucide-react';
 import { Card, Tabs } from '@/components/ui';
 
 interface PdfOutputViewerProps {
@@ -14,8 +14,6 @@ export const PdfOutputViewer: React.FC<PdfOutputViewerProps> = ({ output }) => {
 
   const tabs = [
     { id: 'summary', label: 'Executive Summary', icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'flashcards', label: 'Flashcards', icon: <Sparkles className="w-3.5 h-3.5" />, badge: output.flashcards.length },
-    { id: 'mcqs', label: 'Practice MCQs', icon: <HelpCircle className="w-3.5 h-3.5" />, badge: output.mcqs.length },
   ];
 
   return (
@@ -45,7 +43,7 @@ export const PdfOutputViewer: React.FC<PdfOutputViewerProps> = ({ output }) => {
           <h4 className="text-sm font-bold text-white flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-purple-400" /> Executive AI Summary
           </h4>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950/60 p-4 rounded-2xl border border-slate-800 whitespace-pre-wrap">
             {output.summary}
           </p>
         </Card>
@@ -53,15 +51,7 @@ export const PdfOutputViewer: React.FC<PdfOutputViewerProps> = ({ output }) => {
 
 
 
-      {/* Tab 3: Flashcards */}
-      {activeTab === 'flashcards' && (
-        <InteractiveFlashcards flashcards={output.flashcards} />
-      )}
 
-      {/* Tab 4: Practice MCQs */}
-      {activeTab === 'mcqs' && (
-        <PracticeQuestionsWidget questions={output.mcqs.map((m) => ({ question: m.questionText, options: m.options, answerIndex: m.correctOption }))} />
-      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Video, Code } from 'lucide-react';
+
 import { useAuth } from '@/context/AuthContext';
 
 export const DashboardHeader: React.FC = () => {
