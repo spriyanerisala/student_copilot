@@ -115,22 +115,44 @@ function generateMCQs(topic: string, pdfId: string): QuizQuestion[] {
 
 export const pdfService = {
   async uploadAndProcessPdf(file: File): Promise<PdfSummaryOutput> {
-    // Read actual file content
-    const fileText = await readFileText(file);
-
-    // Small delay for UI processing state
-    await new Promise((res) => setTimeout(res, 1500));
-
     const fileName = file.name || 'document.pdf';
     const fileSize = file.size > 0 ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '< 0.1 MB';
+    const pdfId = `pdf-${Date.now()}`;
+
+    // 1. Send the file to n8n Webhook
+    let n8nSummary = '';
+    try {
+      const formData = new FormData();
+      formData.append('file', file); // Maps to binary.file in n8n
+
+      const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook-test/summarize-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // data expects: { fileName: "...", summary: "..." }
+        if (data && data.summary) {
+          n8nSummary = data.summary;
+        }
+      }
+    } catch (err) {
+      console.warn('n8n webhook failed or timed out:', err);
+    }
+
+    // 2. Read local text for fallback & generating mock flashcards/MCQs
+    const fileText = await readFileText(file);
     const hasContent = fileText.trim().length > 50;
     const topic = detectTopic(fileName, fileText);
-
-    // Build summary from actual file content if available
     const sentences = extractSentences(fileText, 5);
-    const summary = hasContent && sentences.length > 0
-      ? `This document on "${topic}" covers: ${sentences.slice(0, 2).join('. ')}.`
-      : `This document covers core concepts, principles, and applications of ${topic} with practical examples and theoretical foundations.`;
+
+    // Build summary from n8n if available, else fallback to local
+    const finalSummary = n8nSummary 
+      ? n8nSummary 
+      : (hasContent && sentences.length > 0
+          ? `This document on "${topic}" covers: ${sentences.slice(0, 2).join('. ')}.`
+          : `This document covers core concepts, principles, and applications of ${topic} with practical examples and theoretical foundations.`);
 
     // Key points from extracted sentences
     const keyPoints = hasContent && sentences.length > 2
@@ -150,7 +172,6 @@ export const pdfService = {
       `Practice MCQs below to test your understanding of key concepts from this document.`,
     ];
 
-    const pdfId = `pdf-${Date.now()}`;
     const flashcards = generateFlashcards(topic, fileText, 5);
     const mcqs = generateMCQs(topic, pdfId);
 
@@ -159,7 +180,7 @@ export const pdfService = {
       fileName,
       fileSize,
       uploadDate: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
-      summary,
+      summary: finalSummary,
       keyPoints,
       notes,
       flashcards,
