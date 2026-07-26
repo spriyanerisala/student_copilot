@@ -123,7 +123,7 @@ export const pdfService = {
     let n8nSummary = '';
     try {
       const formData = new FormData();
-      formData.append('file', file); // Maps to binary.file in n8n
+      formData.append('file', file);
 
       const res = await fetch('https://n8n-x6q1.srv1854989.hstgr.cloud/webhook-test/summarize-pdf', {
         method: 'POST',
@@ -131,10 +131,18 @@ export const pdfService = {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        // data expects: { fileName: "...", summary: "..." }
-        if (data && data.summary) {
-          n8nSummary = data.summary;
+        const textData = await res.text();
+        try {
+          // Try to parse as JSON first (if user sent { "summary": "..." })
+          const data = JSON.parse(textData);
+          if (data && data.summary) {
+            n8nSummary = data.summary;
+          } else {
+            n8nSummary = textData; // Fallback to raw text if no summary field
+          }
+        } catch (e) {
+          // If JSON parsing fails (e.g. unescaped quotes/newlines), use the raw text
+          n8nSummary = textData;
         }
       }
     } catch (err) {
