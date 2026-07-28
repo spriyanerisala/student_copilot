@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MAIN_NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/utils/constants';
 import { cn } from '@/utils/cn';
 
@@ -99,24 +99,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed: externalCollapsed, 
 
       {/* Bottom Section: Goal Widget & Utilities */}
       <div className="space-y-4 pt-4 border-t border-white/10">
-        {/* Weekly Goal Progress Widget (Shown when expanded) */}
-        {!isCollapsed && (
-          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-purple-950/40 border border-purple-500/20 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
-                <Trophy className="w-3.5 h-3.5 text-amber-400" /> Weekly Study Goal
-              </span>
-              <span className="text-[10px] font-mono text-purple-300">14 / 20 hrs</span>
-            </div>
-            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full w-[70%] rounded-full transition-all duration-500" />
-            </div>
-            <p className="text-[10px] text-slate-400 mt-2">
-              6 hours remaining to earn Placement Readiness boost!
-            </p>
-          </div>
-        )}
-
         {/* Bottom Nav Items (Settings, Help) */}
         <div className="space-y-1">
           {BOTTOM_NAV_ITEMS.map((item) => {

@@ -3,16 +3,11 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { Clock, ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui';
 
-export const TimeSpendingChart: React.FC = () => {
-  const selectedMonth = 'March';
+import { analyticsService } from '@/services/analyticsService';
 
-  const data = [
-    { name: 'Jan', hours: 15 },
-    { name: 'Feb', hours: 25 },
-    { name: 'Mar', hours: 35 },
-    { name: 'Apr', hours: 50 }, // Peak
-    { name: 'May', hours: 28 },
-  ];
+export const TimeSpendingChart: React.FC = () => {
+  const [range, setRange] = React.useState<'weekly' | 'monthly'>('weekly');
+  const data = analyticsService.getStudyTimeData(range);
 
   return (
     <Card className="p-6 space-y-4 flex flex-col justify-between h-full">
@@ -23,8 +18,11 @@ export const TimeSpendingChart: React.FC = () => {
           </h3>
           <p className="text-[11px] text-slate-400">Weekly & monthly study hours</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-semibold text-slate-300 hover:text-white">
-          <span>{selectedMonth}</span>
+        <button 
+          onClick={() => setRange(r => r === 'weekly' ? 'monthly' : 'weekly')}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-semibold text-slate-300 hover:text-white capitalize"
+        >
+          <span>{range}</span>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
         </button>
       </div>

@@ -3,7 +3,11 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { Calendar, ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui';
 
+import { progressService } from '@/services/progressService';
+
 export const AttendanceChart: React.FC = () => {
+  const summary = progressService.getSummary();
+
   const data = [
     { month: 'Jan', rate: 40 },
     { month: 'Feb', rate: 55 },
@@ -12,7 +16,7 @@ export const AttendanceChart: React.FC = () => {
     { month: 'May', rate: 65 },
     { month: 'Jun', rate: 100 }, // Highlighted Peak 100%
     { month: 'Jul', rate: 75 },
-    { month: 'Aug', rate: 80 },
+    { month: 'Aug', rate: Math.min(100, summary.streakDays * 10) },
     { month: 'Sep', rate: 60 },
     { month: 'Oct', rate: 30 },
     { month: 'Nov', rate: 50 },
@@ -24,7 +28,7 @@ export const AttendanceChart: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-purple-400" /> Attendance & Consistency
+            <Calendar className="w-4 h-4 text-purple-400" /> Attendance & Consistency ({summary.streakDays} Day Streak)
           </h3>
           <div className="hidden sm:flex items-center gap-3 text-[10px] text-slate-400">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Low</span>

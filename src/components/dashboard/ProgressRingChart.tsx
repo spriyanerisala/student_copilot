@@ -3,10 +3,14 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Award, Compass, Code } from 'lucide-react';
 import { Card } from '@/components/ui';
 
+import { progressService } from '@/services/progressService';
+
 export const ProgressRingChart: React.FC = () => {
+  const summary = progressService.getSummary();
+
   const data = [
-    { name: 'Design & Architecture', value: 40, color: '#f59e0b' },
-    { name: 'Development & Code', value: 60, color: '#c084fc' },
+    { name: 'Completed', value: summary.courseCompletionPercent, color: '#c084fc' },
+    { name: 'Remaining', value: 100 - summary.courseCompletionPercent, color: '#334155' },
   ];
 
   return (
@@ -19,8 +23,8 @@ export const ProgressRingChart: React.FC = () => {
           <p className="text-[11px] text-slate-400">Your total course progress here</p>
         </div>
         <div className="flex items-center gap-3 text-[10px] text-slate-300">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Design</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-400" /> Development</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-700" /> Remaining</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-400" /> Completed</span>
         </div>
       </div>
 
@@ -56,7 +60,7 @@ export const ProgressRingChart: React.FC = () => {
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
             <span className="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
-            <span className="text-sm font-bold text-white">Achievement</span>
+            <span className="text-sm font-bold text-white">{summary.courseCompletionPercent}%</span>
           </div>
         </div>
 
@@ -67,8 +71,8 @@ export const ProgressRingChart: React.FC = () => {
               <Compass className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-white">Motion Design</h4>
-              <p className="text-[10px] text-slate-400 font-mono">20/60 Watched</p>
+              <h4 className="text-xs font-bold text-white">Course Progress</h4>
+              <p className="text-[10px] text-slate-400 font-mono">{summary.courseCompletionPercent}% Completed</p>
             </div>
           </div>
 
@@ -77,8 +81,8 @@ export const ProgressRingChart: React.FC = () => {
               <Code className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-white">Development</h4>
-              <p className="text-[10px] text-slate-400 font-mono">35/60 Watched</p>
+              <h4 className="text-xs font-bold text-white">Latest Module</h4>
+              <p className="text-[10px] text-slate-400 font-mono">{summary.moduleCompletionPercent}% Completed</p>
             </div>
           </div>
         </div>

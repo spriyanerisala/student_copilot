@@ -3,7 +3,13 @@ import { Sparkles, ArrowRight, CheckCircle2, RotateCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, Button, ProgressBar } from '@/components/ui';
 
+import { progressService } from '@/services/progressService';
+
 export const AiSuggestionsWidget: React.FC = () => {
+  const summary = progressService.getSummary();
+  const queue = progressService.getSpacedRevisions().filter(r => !r.isCompleted);
+  const weakTopic = summary.weakTopics[0] || 'Core Concepts';
+
   return (
     <Card className="p-6 space-y-4 flex flex-col justify-between h-full bg-gradient-to-br from-slate-900 via-slate-900/90 to-purple-950/40 border border-purple-500/30">
       <div className="flex items-center justify-between">
@@ -17,7 +23,7 @@ export const AiSuggestionsWidget: React.FC = () => {
           </div>
         </div>
         <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold font-mono">
-          Score: 84/100
+          Score: {summary.averageQuizScore}/100
         </span>
       </div>
 
@@ -26,9 +32,9 @@ export const AiSuggestionsWidget: React.FC = () => {
         <div className="space-y-1">
           <div className="flex justify-between text-slate-300">
             <span className="flex items-center gap-1.5"><RotateCw className="w-3.5 h-3.5 text-purple-400" /> Spaced Revision Queue</span>
-            <span className="font-semibold text-purple-300">2 Due Today</span>
+            <span className="font-semibold text-purple-300">{queue.length} Due Today</span>
           </div>
-          <ProgressBar value={80} size="sm" variant="gradient" />
+          <ProgressBar value={summary.quizAccuracyPercent} size="sm" variant="gradient" />
         </div>
 
         {/* Suggestion item */}
@@ -37,7 +43,7 @@ export const AiSuggestionsWidget: React.FC = () => {
             <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Recommended Action
           </p>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            Practice 5 DBMS Normalization MCQs to improve your placement readiness score to 90+.
+            Practice more questions on <strong>{weakTopic}</strong> to improve your average quiz score above 90.
           </p>
         </div>
       </div>

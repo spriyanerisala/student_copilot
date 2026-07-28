@@ -74,36 +74,83 @@ export const interviewService = {
     role: TargetRole,
     answers: { [qId: string]: string }
   ): Promise<InterviewFeedbackResult> {
-    // Simulate AI feedback evaluation processing
-    await new Promise((res) => setTimeout(res, 2200));
+    // Simulate processing time
+    await new Promise((res) => setTimeout(res, 1500));
 
     const questions = this.getQuestionSet(type, role);
+    let totalScore = 0;
+    let strengths: string[] = [];
+    let weaknesses: string[] = [];
 
     const questionReviews = questions.map((q) => {
-      const ans = answers[q.id] || 'Candidate provided a general explanation without specific code metrics.';
+      const ans = (answers[q.id] || '').trim();
+      const lowerAns = ans.toLowerCase();
+      
+      let score = 0;
+      let feedback = '';
+      let matchedPoints = 0;
+      
+      const isClueless = !ans || lowerAns.includes("don't know") || lowerAns.includes("do not know") || lowerAns.includes("no idea") || lowerAns.includes("not sure") || ans.length < 10;
+      
+      if (isClueless) {
+        score = Math.floor(Math.random() * 15) + 10; // 10-25
+        feedback = 'You did not provide a substantial answer. In a real interview, if you do not know the exact answer, try to relate it to a similar concept you know or explain how you would find out.';
+        weaknesses.push(`Struggled with the topic: ${q.category}`);
+      } else {
+        // Evaluate key points
+        q.expectedKeyPoints.forEach(point => {
+          const keywords = point.toLowerCase().split(' ').filter(w => w.length > 4);
+          let matchCount = 0;
+          keywords.forEach(kw => {
+            if (lowerAns.includes(kw)) matchCount++;
+          });
+          if (matchCount > 0 || keywords.length === 0) matchedPoints++;
+        });
+        
+        const coverage = q.expectedKeyPoints.length > 0 ? (matchedPoints / q.expectedKeyPoints.length) : 0.5;
+        score = 40 + Math.floor(coverage * 50) + Math.min(10, Math.floor(ans.length / 50));
+        score = Math.min(100, Math.max(0, score));
+        
+        if (score >= 80) {
+          feedback = 'Excellent answer! You covered the core concepts well.';
+          strengths.push(`Strong understanding of ${q.category}`);
+        } else if (score >= 60) {
+          feedback = 'Good attempt, but you missed some critical details. Try to incorporate the key points mentioned below.';
+        } else {
+          feedback = 'Your answer lacked depth. Focus on the core architectural concepts and trade-offs.';
+          weaknesses.push(`Needs review on: ${q.category}`);
+        }
+      }
+
+      totalScore += score;
+      
+      const improvedAnswer = `An effective real-time interview response: "Regarding this topic, I would highlight that ${q.expectedKeyPoints.join(', and ')}." Structuring your answer with clear definitions and examples will greatly improve your performance.`;
+
       return {
         questionText: q.questionText,
-        userAnswer: ans,
-        modelAnswer: `Ideal Response: State core definition clearly, mention trade-offs, and cite real-world metrics. For example, ${q.expectedKeyPoints.join('; ')}.`,
-        score: 88,
-        feedback: 'Solid technical depth! To achieve a perfect score, mention quantitative performance benchmarks.',
+        userAnswer: ans || '(No answer provided)',
+        modelAnswer: improvedAnswer,
+        score,
+        feedback,
       };
     });
 
+    const overallScore = Math.round(totalScore / questions.length);
+    
+    // Deduplicate strengths and weaknesses
+    strengths = Array.from(new Set(strengths));
+    weaknesses = Array.from(new Set(weaknesses));
+    
+    if (strengths.length === 0) strengths.push('Willingness to practice and learn through mock interviews.');
+    if (weaknesses.length === 0) weaknesses.push('Continue practicing to maintain perfect fluency.');
+
     return {
       id: `int-fb-${Date.now()}`,
-      overallScore: 86,
-      technicalAccuracy: 88,
-      confidenceRating: 84,
-      strengths: [
-        'Clear structure using industry terminology (ACID, B+ Trees, Token Bucket).',
-        'Strong understanding of database transaction trade-offs.',
-        'Good communication pacing.',
-      ],
-      weaknesses: [
-        'Could include more specific latency numbers (e.g. < 5ms Redis lookups).',
-        'Provide concrete project examples from personal experience.',
-      ],
+      overallScore,
+      technicalAccuracy: overallScore,
+      confidenceRating: Math.min(100, overallScore + 5),
+      strengths: strengths.slice(0, 3),
+      weaknesses: weaknesses.slice(0, 3),
       questionReviews,
     };
   },

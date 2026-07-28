@@ -2,6 +2,7 @@ import React from 'react';
 import type { InterviewFeedbackResult } from '@/services/interviewService';
 import { Award, CheckCircle2, AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
 import { Card, Button, Badge, ProgressBar } from '@/components/ui';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface InterviewFeedbackReportProps {
   feedback: InterviewFeedbackResult;
@@ -51,6 +52,36 @@ export const InterviewFeedbackReport: React.FC<InterviewFeedbackReportProps> = (
             </div>
             <ProgressBar value={feedback.confidenceRating} size="sm" variant="gradient" />
           </div>
+        </div>
+      </Card>
+
+      {/* Analytics Radar Chart */}
+      <Card className="p-6 space-y-4 border border-slate-800 bg-slate-900/50">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-purple-400" /> Performance Analytics Breakdown
+        </h3>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+              { subject: 'Overall', score: feedback.overallScore, fullMark: 100 },
+              { subject: 'Technical', score: feedback.technicalAccuracy, fullMark: 100 },
+              { subject: 'Confidence', score: feedback.confidenceRating, fullMark: 100 },
+              ...feedback.questionReviews.map((qr, idx) => ({
+                subject: `Q${idx + 1} Score`,
+                score: qr.score,
+                fullMark: 100,
+              }))
+            ]}>
+              <PolarGrid stroke="#334155" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#475569', fontSize: 10 }} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
+                itemStyle={{ color: '#c084fc', fontWeight: 'bold' }}
+              />
+              <Radar name="Performance Score" dataKey="score" stroke="#a855f7" fill="#a855f7" fillOpacity={0.4} />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
       </Card>
 

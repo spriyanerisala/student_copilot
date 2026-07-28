@@ -8,6 +8,8 @@ import { UpcomingCoursesList } from '@/components/dashboard/UpcomingCoursesList'
 import { ScheduleCalendar } from '@/components/dashboard/ScheduleCalendar';
 import { AiSuggestionsWidget } from '@/components/dashboard/AiSuggestionsWidget';
 
+import { SubmittedProblemsWidget } from '@/components/dashboard/SubmittedProblemsWidget';
+
 export const DashboardPage: React.FC = () => {
   return (
     <div className="space-y-6 select-none">
@@ -40,9 +42,14 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 3: AI Recommendations & Placement Readiness */}
-      <div className="w-full">
-        <AiSuggestionsWidget />
+      {/* Row 3: AI Recommendations & Submitted Problems */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="lg:col-span-1">
+          <AiSuggestionsWidget />
+        </div>
+        <div className="lg:col-span-1">
+          <SubmittedProblemsWidget />
+        </div>
       </div>
     </div>
   );

@@ -16,10 +16,13 @@ import { LessonViewerPage, QuizPage } from '@/pages/learning/LearningPages';
 import { MyCoursesPage } from '@/pages/learning/MyCoursesPage';
 import { AiMentorPage, PdfSummarizerPage, ResumeAnalyzerPage, MockInterviewPage } from '@/pages/ai/AiPages';
 import { CertificatePage } from '@/pages/certificate/CertificatePage';
+import { AgenticAiPage } from '@/pages/agentic/AgenticAiPage';
+import { AgenticQuizPage } from '@/pages/agentic/AgenticQuizPage';
+import { AgenticCodingPage } from '@/pages/agentic/AgenticCodingPage';
+import { AgenticProblemListPage } from '@/pages/agentic/AgenticProblemListPage';
+import { AgenticSolvedPage } from '@/pages/agentic/AgenticSolvedPage';
 import { VerifyCertificatePage } from '@/pages/certificate/VerifyCertificatePage';
 import { PaymentSuccessPage } from '@/pages/payment/PaymentSuccessPage';
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
-import { PlacementPage } from '@/pages/placement/PlacementPage';
 import { SettingsPage } from '@/pages/misc/MiscPages';
 
 export const AppRoutes: React.FC = () => {
@@ -52,8 +55,12 @@ export const AppRoutes: React.FC = () => {
           <Route path="/pdf-summarizer" element={<PdfSummarizerPage />} />
           <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
           <Route path="/mock-interview" element={<MockInterviewPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/placement-readiness" element={<PlacementPage />} />
+          {/* Agentic AI Tool Routes */}
+          <Route path="/agentic-ai" element={<AgenticAiPage />} />
+          <Route path="/agentic-ai/quiz/:domain/:topic" element={<AgenticQuizPage />} />
+          <Route path="/agentic-ai/solved" element={<AgenticSolvedPage />} />
+          <Route path="/agentic-ai/coding/:topic" element={<AgenticProblemListPage />} />
+          <Route path="/agentic-ai/coding/:topic/:problemId" element={<AgenticCodingPage />} />
           <Route path="/certificate/:certificateId" element={<CertificatePage />} />
           <Route path="/certificates" element={<CertificatePage />} />
           <Route path="/payment/success" element={<PaymentSuccessPage />} />
