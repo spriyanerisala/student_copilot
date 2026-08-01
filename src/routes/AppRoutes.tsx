@@ -24,6 +24,7 @@ import { AgenticSolvedPage } from '@/pages/agentic/AgenticSolvedPage';
 import { VerifyCertificatePage } from '@/pages/certificate/VerifyCertificatePage';
 import { PaymentSuccessPage } from '@/pages/payment/PaymentSuccessPage';
 import { SettingsPage } from '@/pages/misc/MiscPages';
+import { JobFinderPage } from '@/pages/jobs/JobFinderPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -55,6 +56,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/pdf-summarizer" element={<PdfSummarizerPage />} />
           <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
           <Route path="/mock-interview" element={<MockInterviewPage />} />
+          <Route path="/job-finder" element={<JobFinderPage />} />
           {/* Agentic AI Tool Routes */}
           <Route path="/agentic-ai" element={<AgenticAiPage />} />
           <Route path="/agentic-ai/quiz/:domain/:topic" element={<AgenticQuizPage />} />
