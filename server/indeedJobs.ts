@@ -102,12 +102,69 @@ function formatPostedDate(datePublishedMs?: number | null): string | null {
   return posted.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/** Approximate FX used so every salary displays in Indian Rupees. */
+const FX_TO_INR: Record<string, number> = {
+  INR: 1,
+  USD: 86,
+  EUR: 93,
+  GBP: 109,
+  CAD: 63,
+  AUD: 56,
+  SGD: 64,
+};
+
+function formatInr(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(Math.round(amount));
+}
+
+function toInr(amount: number, currencyCode: string): number {
+  const rate = FX_TO_INR[currencyCode.toUpperCase()] ?? FX_TO_INR.USD;
+  return amount * rate;
+}
+
+function convertSalaryTextToInr(salary: string): string {
+  const normalized = salary
+    .replace(/\bRs\.?\s*/gi, '₹')
+    .replace(/\bINR\s*/gi, '₹')
+    .trim();
+
+  // Already in rupees
+  if (/₹/.test(normalized) && !/\$/.test(normalized)) {
+    return normalized;
+  }
+
+  // Convert "$120,000 - $150,000 a year" (and similar) into INR
+  const dollarPattern =
+    /\$\s*([\d,]+(?:\.\d+)?)\s*(?:-|–|to)\s*\$\s*([\d,]+(?:\.\d+)?)(.*)$/i;
+  const singleDollarPattern = /\$\s*([\d,]+(?:\.\d+)?)(.*)$/i;
+
+  const rangeMatch = normalized.match(dollarPattern);
+  if (rangeMatch) {
+    const min = toInr(Number(rangeMatch[1].replace(/,/g, '')), 'USD');
+    const max = toInr(Number(rangeMatch[2].replace(/,/g, '')), 'USD');
+    const suffix = (rangeMatch[3] || '').trim();
+    return suffix
+      ? `${formatInr(min)} - ${formatInr(max)} ${suffix}`
+      : `${formatInr(min)} - ${formatInr(max)}`;
+  }
+
+  const singleMatch = normalized.match(singleDollarPattern);
+  if (singleMatch) {
+    const amount = toInr(Number(singleMatch[1].replace(/,/g, '')), 'USD');
+    const suffix = (singleMatch[2] || '').trim();
+    return suffix ? `${formatInr(amount)} ${suffix}` : formatInr(amount);
+  }
+
+  return normalized;
+}
+
 function formatSalary(compensation: any, detailedSalary?: string | null): string | null {
   if (detailedSalary) {
-    // Normalize "Rs." / "INR" style strings Indeed sometimes returns
-    return detailedSalary
-      .replace(/\bRs\.?\s*/gi, '₹')
-      .replace(/\bINR\s*/gi, '₹');
+    return convertSalaryTextToInr(detailedSalary);
   }
 
   const base = compensation?.baseSalary || compensation?.estimated?.baseSalary;
@@ -115,22 +172,15 @@ function formatSalary(compensation: any, detailedSalary?: string | null): string
 
   const currency = compensation?.currencyCode || compensation?.estimated?.currencyCode || 'USD';
   const unit = String(base.unitOfWork || 'YEAR').toLowerCase();
-  const min = base.range.min;
-  const max = base.range.max;
-  const locale = currency === 'INR' ? 'en-IN' : 'en-US';
-  const fmt = (n: number) =>
-    new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(n);
+  const min = base.range.min != null ? toInr(Number(base.range.min), currency) : null;
+  const max = base.range.max != null ? toInr(Number(base.range.max), currency) : null;
 
   const periodLabel =
     unit === 'year' ? 'year' : unit === 'month' ? 'month' : unit === 'hour' ? 'hour' : unit;
 
-  if (min != null && max != null) return `${fmt(min)} - ${fmt(max)} a ${periodLabel}`;
-  if (min != null) return `From ${fmt(min)} a ${periodLabel}`;
-  if (max != null) return `Up to ${fmt(max)} a ${periodLabel}`;
+  if (min != null && max != null) return `${formatInr(min)} - ${formatInr(max)} a ${periodLabel}`;
+  if (min != null) return `From ${formatInr(min)} a ${periodLabel}`;
+  if (max != null) return `Up to ${formatInr(max)} a ${periodLabel}`;
   return null;
 }
 
@@ -142,7 +192,7 @@ export function mapIndeedItem(item: RawIndeedItem): JobListing | null {
     title: item.positionName,
     company: item.company || 'Unknown company',
     location: item.location || 'Not specified',
-    salary: item.salary ?? null,
+    salary: item.salary ? convertSalaryTextToInr(item.salary) : null,
     url: item.url || '',
     description: item.description || '',
     postedDate: item.postedAt ?? null,
