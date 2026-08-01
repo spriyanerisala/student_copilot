@@ -51,8 +51,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, open, onClo
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          <Badge variant={job.source === 'indeed' ? 'success' : 'warning'} size="sm">
-            {job.source === 'indeed' ? 'Live Indeed via Apify' : 'Demo data'}
+          <Badge variant="success" size="sm">
+            Live from Indeed
           </Badge>
           {(job.jobType || []).map((type) => (
             <Badge key={type} variant="secondary" size="sm">

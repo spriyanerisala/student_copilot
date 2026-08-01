@@ -2,6 +2,21 @@ import { ApifyClient } from 'apify-client';
 
 export const INDEED_ACTOR_ID = 'misceres/indeed-scraper';
 
+/** Static key embedded in the Indeed iOS app (same approach as JobSpy / Apify Indeed scrapers). */
+const INDEED_MOBILE_API_KEY =
+  '161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8';
+
+const INDEED_GRAPHQL_URL = 'https://apis.indeed.com/graphql';
+
+const COUNTRY_CONFIG: Record<string, { domain: string; co: string; locale: string }> = {
+  US: { domain: 'www.indeed.com', co: 'US', locale: 'en-US' },
+  IN: { domain: 'in.indeed.com', co: 'IN', locale: 'en-IN' },
+  GB: { domain: 'uk.indeed.com', co: 'GB', locale: 'en-GB' },
+  CA: { domain: 'ca.indeed.com', co: 'CA', locale: 'en-CA' },
+  DE: { domain: 'de.indeed.com', co: 'DE', locale: 'de-DE' },
+  AU: { domain: 'au.indeed.com', co: 'AU', locale: 'en-AU' },
+};
+
 export interface JobSearchParams {
   position: string;
   location: string;
@@ -24,14 +39,15 @@ export interface JobListing {
   reviewsCount: number | null;
   scrapedAt: string | null;
   externalApplyLink: string | null;
-  source: 'indeed' | 'demo';
+  source: 'indeed';
 }
 
 export interface JobSearchResult {
   jobs: JobListing[];
-  source: 'indeed' | 'demo';
+  source: 'indeed';
   actorRunId?: string;
   message?: string;
+  provider: 'apify' | 'indeed-api';
 }
 
 type RawIndeedItem = {
@@ -50,11 +66,63 @@ type RawIndeedItem = {
   scrapedAt?: string | null;
   externalApplyLink?: string | null;
   error?: string;
-  errorDescription?: string;
 };
 
 function getApifyToken(): string | undefined {
   return process.env.APIFY_TOKEN || process.env.APIFY_API_TOKEN;
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function formatPostedDate(datePublishedMs?: number | null): string | null {
+  if (!datePublishedMs) return null;
+  const posted = new Date(datePublishedMs);
+  if (Number.isNaN(posted.getTime())) return null;
+
+  const diffMs = Date.now() - posted.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days <= 0) return 'Today';
+  if (days === 1) return '1 day ago';
+  if (days < 30) return `${days} days ago`;
+  return posted.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatSalary(compensation: any, detailedSalary?: string | null): string | null {
+  if (detailedSalary) return detailedSalary;
+
+  const base = compensation?.baseSalary || compensation?.estimated?.baseSalary;
+  if (!base?.range) return null;
+
+  const currency = compensation?.currencyCode || compensation?.estimated?.currencyCode || 'USD';
+  const unit = String(base.unitOfWork || 'YEAR').toLowerCase();
+  const min = base.range.min;
+  const max = base.range.max;
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(n);
+
+  if (min != null && max != null) return `${fmt(min)} - ${fmt(max)} a ${unit}`;
+  if (min != null) return `From ${fmt(min)} a ${unit}`;
+  if (max != null) return `Up to ${fmt(max)} a ${unit}`;
+  return null;
 }
 
 export function mapIndeedItem(item: RawIndeedItem): JobListing | null {
@@ -79,131 +147,163 @@ export function mapIndeedItem(item: RawIndeedItem): JobListing | null {
   };
 }
 
-export function getDemoJobs(params: JobSearchParams): JobListing[] {
-  const query = params.position.trim() || 'Software Engineer';
-  const location = params.location.trim() || 'Remote';
-  const now = new Date().toISOString();
+async function searchIndeedViaGraphQL(params: JobSearchParams): Promise<JobSearchResult> {
+  const maxItems = Math.min(Math.max(params.maxItems ?? 20, 1), 50);
+  const countryKey = (params.country || 'US').toUpperCase();
+  const country = COUNTRY_CONFIG[countryKey] || COUNTRY_CONFIG.US;
+  const position = params.position.replace(/"/g, '\\"');
+  const location = params.location.trim().replace(/"/g, '\\"');
 
-  const templates: Array<Omit<JobListing, 'id' | 'title' | 'location' | 'scrapedAt' | 'source'>> = [
-    {
-      company: 'Stripe',
-      salary: '$140,000 - $185,000 a year',
-      url: 'https://www.indeed.com/q-Software-Engineer-jobs.html',
-      description:
-        'Build reliable payment systems and developer tools. Strong TypeScript/React experience preferred. Collaborate with product and design on full-stack features.',
-      postedDate: 'Today',
-      jobType: ['Full-time'],
-      companyLogo: null,
-      rating: 4.3,
-      reviewsCount: 820,
-      externalApplyLink: null,
-    },
-    {
-      company: 'Microsoft',
-      salary: '$120,000 - $160,000 a year',
-      url: 'https://www.indeed.com/q-Software-Engineer-jobs.html',
-      description:
-        'Join a product engineering team shipping cloud services at scale. Experience with distributed systems, APIs, and modern frontend frameworks is a plus.',
-      postedDate: '1 day ago',
-      jobType: ['Full-time'],
-      companyLogo: null,
-      rating: 4.1,
-      reviewsCount: 21000,
-      externalApplyLink: null,
-    },
-    {
-      company: 'Amazon',
-      salary: '$130,000 - $175,000 a year',
-      url: 'https://www.indeed.com/q-Software-Engineer-jobs.html',
-      description:
-        'Design and implement customer-facing services. Ownership of operational excellence, code quality, and mentorship for junior engineers.',
-      postedDate: '2 days ago',
-      jobType: ['Full-time'],
-      companyLogo: null,
-      rating: 3.6,
-      reviewsCount: 98000,
-      externalApplyLink: null,
-    },
-    {
-      company: 'Google',
-      salary: '$145,000 - $200,000 a year',
-      url: 'https://www.indeed.com/q-Software-Engineer-jobs.html',
-      description:
-        'Work on large-scale infrastructure and product surfaces. Strong algorithms/data structures background and production coding experience required.',
-      postedDate: '3 days ago',
-      jobType: ['Full-time'],
-      companyLogo: null,
-      rating: 4.3,
-      reviewsCount: 45000,
-      externalApplyLink: null,
-    },
-    {
-      company: 'Notion',
-      salary: '$125,000 - $170,000 a year',
-      url: 'https://www.indeed.com/q-Software-Engineer-jobs.html',
-      description:
-        'Ship collaborative productivity features end-to-end. Prefer experience with React, TypeScript, and thoughtful product engineering.',
-      postedDate: '4 days ago',
-      jobType: ['Full-time', 'Remote'],
-      companyLogo: null,
-      rating: 4.0,
-      reviewsCount: 210,
-      externalApplyLink: null,
-    },
-    {
-      company: 'Vercel',
-      salary: '$135,000 - $180,000 a year',
-      url: 'https://www.indeed.com/q-Software-Engineer-jobs.html',
-      description:
-        'Build developer platform experiences around Next.js and the edge network. Strong frontend systems and DX focus.',
-      postedDate: '5 days ago',
-      jobType: ['Full-time', 'Remote'],
-      companyLogo: null,
-      rating: 4.4,
-      reviewsCount: 95,
-      externalApplyLink: null,
-    },
-  ];
+  const locationClause = location
+    ? `location: {where: "${location}", radius: 50, radiusUnit: MILES}`
+    : '';
 
-  const max = Math.min(params.maxItems ?? 12, templates.length);
+  const query = `
+    query GetJobData {
+      jobSearch(
+        what: "${position}"
+        ${locationClause}
+        limit: ${maxItems}
+        sort: RELEVANCE
+      ) {
+        results {
+          job {
+            key
+            title
+            datePublished
+            description { html }
+            location {
+              city
+              admin1Code
+              countryCode
+              formatted { short long }
+            }
+            compensation {
+              estimated {
+                currencyCode
+                baseSalary {
+                  unitOfWork
+                  range { ... on Range { min max } }
+                }
+              }
+              baseSalary {
+                unitOfWork
+                range { ... on Range { min max } }
+              }
+              currencyCode
+            }
+            attributes { key label }
+            employer {
+              name
+              dossier {
+                images { squareLogoUrl }
+              }
+            }
+            recruit {
+              viewJobUrl
+              detailedSalary
+            }
+          }
+        }
+      }
+    }
+  `;
 
-  return templates.slice(0, max).map((job, index) => ({
-    ...job,
-    id: `demo-${index + 1}`,
-    title: index % 2 === 0 ? query : `Senior ${query}`,
-    location,
-    scrapedAt: now,
-    source: 'demo' as const,
-  }));
+  const response = await fetch(INDEED_GRAPHQL_URL, {
+    method: 'POST',
+    headers: {
+      Host: 'apis.indeed.com',
+      'content-type': 'application/json',
+      'indeed-api-key': INDEED_MOBILE_API_KEY,
+      accept: 'application/json',
+      'indeed-locale': country.locale,
+      'accept-language': `${country.locale},en;q=0.9`,
+      'user-agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1',
+      'indeed-app-info': 'appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone',
+      'indeed-co': country.co,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Indeed API failed (${response.status}): ${body.slice(0, 200)}`);
+  }
+
+  const payload = (await response.json()) as any;
+  if (payload.errors?.length) {
+    throw new Error(payload.errors[0]?.message || 'Indeed GraphQL returned errors');
+  }
+
+  const results: any[] = payload?.data?.jobSearch?.results || [];
+  const scrapedAt = new Date().toISOString();
+
+  const jobs: JobListing[] = [];
+
+  for (const row of results) {
+    const job = row?.job;
+    if (!job?.key || !job?.title) continue;
+
+    const loc =
+      job.location?.formatted?.long ||
+      job.location?.formatted?.short ||
+      [job.location?.city, job.location?.admin1Code].filter(Boolean).join(', ') ||
+      'Not specified';
+
+    const rawLabels: string[] = Array.isArray(job.attributes)
+      ? job.attributes
+          .map((a: { label?: string }) => a?.label)
+          .filter((label: unknown): label is string => typeof label === 'string' && label.length > 0)
+      : [];
+
+    const jobTypes = [
+      ...new Set(
+        rawLabels.filter((label) =>
+          /full-?time|part-?time|contract|internship|temporary|remote/i.test(label)
+        )
+      ),
+    ];
+
+    jobs.push({
+      id: String(job.key),
+      title: job.title,
+      company: job.employer?.name || 'Unknown company',
+      location: loc,
+      salary: formatSalary(job.compensation, job.recruit?.detailedSalary),
+      url: `https://${country.domain}/viewjob?jk=${job.key}`,
+      description: stripHtml(job.description?.html || ''),
+      postedDate: formatPostedDate(job.datePublished),
+      jobType: jobTypes.length > 0 ? jobTypes : null,
+      companyLogo: job.employer?.dossier?.images?.squareLogoUrl || null,
+      rating: null,
+      reviewsCount: null,
+      scrapedAt,
+      externalApplyLink: job.recruit?.viewJobUrl || null,
+      source: 'indeed',
+    });
+  }
+
+  return {
+    jobs,
+    source: 'indeed',
+    provider: 'indeed-api',
+    message:
+      jobs.length === 0
+        ? 'No Indeed jobs matched this search. Try different keywords or location.'
+        : undefined,
+  };
 }
 
-export async function searchIndeedJobs(params: JobSearchParams): Promise<JobSearchResult> {
-  const position = params.position.trim();
-  const location = params.location.trim();
-
-  if (!position) {
-    throw new Error('Job title / keywords are required.');
-  }
-
+async function searchIndeedViaApify(params: JobSearchParams, token: string): Promise<JobSearchResult> {
   const maxItems = Math.min(Math.max(params.maxItems ?? 20, 1), 50);
   const country = (params.country || 'US').toUpperCase();
-  const token = getApifyToken();
-
-  if (!token) {
-    return {
-      jobs: getDemoJobs({ position, location: location || 'Remote', maxItems, country }),
-      source: 'demo',
-      message:
-        'APIFY_TOKEN is not configured. Showing demo listings. Add APIFY_TOKEN on the server to fetch live Indeed jobs via Apify.',
-    };
-  }
-
   const client = new ApifyClient({ token });
 
   const run = await client.actor(INDEED_ACTOR_ID).call(
     {
-      position,
-      location: location || undefined,
+      position: params.position,
+      location: params.location || undefined,
       country,
       maxItemsPerSearch: maxItems,
       parseCompanyDetails: false,
@@ -226,18 +326,41 @@ export async function searchIndeedJobs(params: JobSearchParams): Promise<JobSear
     .map(mapIndeedItem)
     .filter((job): job is JobListing => job !== null);
 
-  if (jobs.length === 0) {
-    return {
-      jobs: [],
-      source: 'indeed',
-      actorRunId: run.id,
-      message: 'No Indeed jobs matched this search. Try different keywords or location.',
-    };
-  }
-
   return {
     jobs,
     source: 'indeed',
     actorRunId: run.id,
+    provider: 'apify',
+    message:
+      jobs.length === 0
+        ? 'No Indeed jobs matched this search. Try different keywords or location.'
+        : undefined,
   };
+}
+
+export async function searchIndeedJobs(params: JobSearchParams): Promise<JobSearchResult> {
+  const position = params.position.trim();
+  const location = params.location.trim();
+
+  if (!position) {
+    throw new Error('Job title / keywords are required.');
+  }
+
+  const searchParams: JobSearchParams = {
+    position,
+    location,
+    country: params.country || 'US',
+    maxItems: params.maxItems,
+  };
+
+  const token = getApifyToken();
+  if (token) {
+    try {
+      return await searchIndeedViaApify(searchParams, token);
+    } catch (error) {
+      console.warn('[indeedJobs] Apify failed, falling back to Indeed API:', error);
+    }
+  }
+
+  return searchIndeedViaGraphQL(searchParams);
 }

@@ -25,8 +25,8 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onOpen }) => {
             <p className="text-xs text-slate-300 truncate">{job.company}</p>
           </div>
         </div>
-        <Badge variant={job.source === 'indeed' ? 'success' : 'warning'} size="sm">
-          {job.source === 'indeed' ? 'Indeed' : 'Demo'}
+        <Badge variant="success" size="sm">
+          Indeed
         </Badge>
       </div>
 

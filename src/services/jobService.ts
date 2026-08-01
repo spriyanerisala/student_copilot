@@ -13,7 +13,7 @@ export interface JobListing {
   reviewsCount: number | null;
   scrapedAt: string | null;
   externalApplyLink: string | null;
-  source: 'indeed' | 'demo';
+  source: 'indeed';
 }
 
 export interface JobSearchParams {
@@ -25,9 +25,10 @@ export interface JobSearchParams {
 
 export interface JobSearchResult {
   jobs: JobListing[];
-  source: 'indeed' | 'demo';
+  source: 'indeed';
   actorRunId?: string;
   message?: string;
+  provider?: 'apify' | 'indeed-api';
 }
 
 export const jobService = {
@@ -58,9 +59,10 @@ export const jobService = {
 
     return {
       jobs: Array.isArray(data.jobs) ? data.jobs : [],
-      source: data.source === 'indeed' ? 'indeed' : 'demo',
+      source: 'indeed',
       actorRunId: data.actorRunId,
       message: data.message,
+      provider: data.provider,
     };
   },
 };
