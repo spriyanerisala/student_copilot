@@ -31,6 +31,8 @@ export interface JobListing {
   location: string;
   salary: string | null;
   url: string;
+  /** Direct company / Indeed application URL — open this to apply. */
+  applyUrl: string;
   description: string;
   postedDate: string | null;
   jobType: string[] | null;
@@ -187,13 +189,21 @@ function formatSalary(compensation: any, detailedSalary?: string | null): string
 export function mapIndeedItem(item: RawIndeedItem): JobListing | null {
   if (item.error || !item.positionName) return null;
 
+  const url = item.url || '';
+  const externalApplyLink = item.externalApplyLink ?? null;
+  const applyUrl =
+    externalApplyLink ||
+    (item.id ? `https://www.indeed.com/viewjob?jk=${item.id}` : '') ||
+    url;
+
   return {
     id: String(item.id || `${item.company}-${item.positionName}`.replace(/\s+/g, '-').toLowerCase()),
     title: item.positionName,
     company: item.company || 'Unknown company',
     location: item.location || 'Not specified',
     salary: item.salary ? convertSalaryTextToInr(item.salary) : null,
-    url: item.url || '',
+    url,
+    applyUrl,
     description: item.description || '',
     postedDate: item.postedAt ?? null,
     jobType: item.jobType ?? null,
@@ -201,7 +211,7 @@ export function mapIndeedItem(item: RawIndeedItem): JobListing | null {
     rating: item.rating ?? null,
     reviewsCount: item.reviewsCount ?? null,
     scrapedAt: item.scrapedAt ?? null,
-    externalApplyLink: item.externalApplyLink ?? null,
+    externalApplyLink,
     source: 'indeed',
   };
 }
@@ -324,13 +334,22 @@ async function searchIndeedViaGraphQL(params: JobSearchParams): Promise<JobSearc
       ),
     ];
 
+    const viewUrl = `https://${country.domain}/viewjob?jk=${job.key}`;
+    const companyApplyUrl =
+      typeof job.recruit?.viewJobUrl === 'string' && job.recruit.viewJobUrl.trim()
+        ? job.recruit.viewJobUrl.trim()
+        : null;
+    // Prefer the employer's application page; otherwise open Indeed's apply/view flow.
+    const applyUrl = companyApplyUrl || `${viewUrl}#apply`;
+
     jobs.push({
       id: String(job.key),
       title: job.title,
       company: job.employer?.name || 'Unknown company',
       location: loc,
       salary: formatSalary(job.compensation, job.recruit?.detailedSalary),
-      url: `https://${country.domain}/viewjob?jk=${job.key}`,
+      url: viewUrl,
+      applyUrl,
       description: stripHtml(job.description?.html || ''),
       postedDate: formatPostedDate(job.datePublished),
       jobType: jobTypes.length > 0 ? jobTypes : null,
@@ -338,7 +357,7 @@ async function searchIndeedViaGraphQL(params: JobSearchParams): Promise<JobSearc
       rating: null,
       reviewsCount: null,
       scrapedAt,
-      externalApplyLink: job.recruit?.viewJobUrl || null,
+      externalApplyLink: companyApplyUrl,
       source: 'indeed',
     });
   }

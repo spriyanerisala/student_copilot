@@ -8,6 +8,12 @@ interface JobCardProps {
   onOpen: (job: JobListing) => void;
 }
 
+function openApply(job: JobListing) {
+  const applyUrl = job.applyUrl || job.externalApplyLink || job.url;
+  if (!applyUrl) return;
+  window.open(applyUrl, '_blank', 'noopener,noreferrer');
+}
+
 export const JobCard: React.FC<JobCardProps> = ({ job, onOpen }) => {
   return (
     <Card className="p-5 space-y-4 border border-white/10 bg-slate-950/50">
@@ -67,19 +73,16 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onOpen }) => {
       </p>
 
       <div className="flex items-center gap-2 pt-1">
-        <Button size="sm" onClick={() => onOpen(job)}>
+        <Button
+          size="sm"
+          rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+          onClick={() => openApply(job)}
+        >
+          Apply Now
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onOpen(job)}>
           View details
         </Button>
-        {job.url && (
-          <Button
-            size="sm"
-            variant="outline"
-            rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
-            onClick={() => window.open(job.url, '_blank', 'noopener,noreferrer')}
-          >
-            Open on Indeed
-          </Button>
-        )}
       </div>
     </Card>
   );

@@ -5,6 +5,8 @@ export interface JobListing {
   location: string;
   salary: string | null;
   url: string;
+  /** Direct company / Indeed application URL — open this to apply. */
+  applyUrl: string;
   description: string;
   postedDate: string | null;
   jobType: string[] | null;
@@ -58,7 +60,12 @@ export const jobService = {
     }
 
     return {
-      jobs: Array.isArray(data.jobs) ? data.jobs : [],
+      jobs: Array.isArray(data.jobs)
+        ? data.jobs.map((job) => ({
+            ...job,
+            applyUrl: job.applyUrl || job.externalApplyLink || job.url || '',
+          }))
+        : [],
       source: 'indeed',
       actorRunId: data.actorRunId,
       message: data.message,

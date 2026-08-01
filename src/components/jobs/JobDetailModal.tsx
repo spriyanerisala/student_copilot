@@ -12,7 +12,12 @@ interface JobDetailModalProps {
 export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, open, onClose }) => {
   if (!job) return null;
 
-  const applyUrl = job.externalApplyLink || job.url;
+  const applyUrl = job.applyUrl || job.externalApplyLink || job.url;
+
+  const handleApply = () => {
+    if (!applyUrl) return;
+    window.open(applyUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <Modal isOpen={open} onClose={onClose} title={job.title} maxWidth="xl">
@@ -54,6 +59,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, open, onClo
           <Badge variant="success" size="sm">
             Live from Indeed
           </Badge>
+          {job.externalApplyLink && (
+            <Badge variant="primary" size="sm">
+              Direct company apply
+            </Badge>
+          )}
           {(job.jobType || []).map((type) => (
             <Badge key={type} variant="secondary" size="sm">
               {type}
@@ -69,11 +79,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, open, onClo
 
         <div className="flex flex-wrap gap-2">
           {applyUrl && (
-            <Button
-              rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
-              onClick={() => window.open(applyUrl, '_blank', 'noopener,noreferrer')}
-            >
-              Apply / View on Indeed
+            <Button rightIcon={<ExternalLink className="w-3.5 h-3.5" />} onClick={handleApply}>
+              Apply Now
             </Button>
           )}
           <Button variant="outline" onClick={onClose}>
