@@ -103,7 +103,12 @@ function formatPostedDate(datePublishedMs?: number | null): string | null {
 }
 
 function formatSalary(compensation: any, detailedSalary?: string | null): string | null {
-  if (detailedSalary) return detailedSalary;
+  if (detailedSalary) {
+    // Normalize "Rs." / "INR" style strings Indeed sometimes returns
+    return detailedSalary
+      .replace(/\bRs\.?\s*/gi, '₹')
+      .replace(/\bINR\s*/gi, '₹');
+  }
 
   const base = compensation?.baseSalary || compensation?.estimated?.baseSalary;
   if (!base?.range) return null;
@@ -112,16 +117,20 @@ function formatSalary(compensation: any, detailedSalary?: string | null): string
   const unit = String(base.unitOfWork || 'YEAR').toLowerCase();
   const min = base.range.min;
   const max = base.range.max;
+  const locale = currency === 'INR' ? 'en-IN' : 'en-US';
   const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', {
+    new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
     }).format(n);
 
-  if (min != null && max != null) return `${fmt(min)} - ${fmt(max)} a ${unit}`;
-  if (min != null) return `From ${fmt(min)} a ${unit}`;
-  if (max != null) return `Up to ${fmt(max)} a ${unit}`;
+  const periodLabel =
+    unit === 'year' ? 'year' : unit === 'month' ? 'month' : unit === 'hour' ? 'hour' : unit;
+
+  if (min != null && max != null) return `${fmt(min)} - ${fmt(max)} a ${periodLabel}`;
+  if (min != null) return `From ${fmt(min)} a ${periodLabel}`;
+  if (max != null) return `Up to ${fmt(max)} a ${periodLabel}`;
   return null;
 }
 
@@ -149,8 +158,8 @@ export function mapIndeedItem(item: RawIndeedItem): JobListing | null {
 
 async function searchIndeedViaGraphQL(params: JobSearchParams): Promise<JobSearchResult> {
   const maxItems = Math.min(Math.max(params.maxItems ?? 20, 1), 50);
-  const countryKey = (params.country || 'US').toUpperCase();
-  const country = COUNTRY_CONFIG[countryKey] || COUNTRY_CONFIG.US;
+  const countryKey = (params.country || 'IN').toUpperCase();
+  const country = COUNTRY_CONFIG[countryKey] || COUNTRY_CONFIG.IN;
   const position = params.position.replace(/"/g, '\\"');
   const location = params.location.trim().replace(/"/g, '\\"');
 
@@ -297,7 +306,7 @@ async function searchIndeedViaGraphQL(params: JobSearchParams): Promise<JobSearc
 
 async function searchIndeedViaApify(params: JobSearchParams, token: string): Promise<JobSearchResult> {
   const maxItems = Math.min(Math.max(params.maxItems ?? 20, 1), 50);
-  const country = (params.country || 'US').toUpperCase();
+  const country = (params.country || 'IN').toUpperCase();
   const client = new ApifyClient({ token });
 
   const run = await client.actor(INDEED_ACTOR_ID).call(
@@ -349,7 +358,7 @@ export async function searchIndeedJobs(params: JobSearchParams): Promise<JobSear
   const searchParams: JobSearchParams = {
     position,
     location,
-    country: params.country || 'US',
+    country: params.country || 'IN',
     maxItems: params.maxItems,
   };
 

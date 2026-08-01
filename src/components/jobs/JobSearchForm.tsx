@@ -16,8 +16,8 @@ interface JobSearchFormProps {
 }
 
 const COUNTRIES = [
-  { value: 'US', label: 'United States' },
   { value: 'IN', label: 'India' },
+  { value: 'US', label: 'United States' },
   { value: 'GB', label: 'United Kingdom' },
   { value: 'CA', label: 'Canada' },
   { value: 'DE', label: 'Germany' },
@@ -50,7 +50,7 @@ export const JobSearchForm: React.FC<JobSearchFormProps> = ({
       <div className="md:col-span-3">
         <Input
           label="Location"
-          placeholder="e.g. City or Remote"
+          placeholder="e.g. Bengaluru, Hyderabad, Mumbai"
           value={values.location}
           leftIcon={<MapPin className="w-4 h-4" />}
           onChange={(e) => onChange({ ...values, location: e.target.value })}

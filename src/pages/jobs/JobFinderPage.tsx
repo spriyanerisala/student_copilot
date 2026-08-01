@@ -8,8 +8,8 @@ import { Badge, Button, Card } from '@/components/ui';
 
 const DEFAULT_SEARCH: JobSearchFormValues = {
   position: 'Software Engineer',
-  location: 'Austin, TX',
-  country: 'US',
+  location: 'Bengaluru',
+  country: 'IN',
 };
 
 export const JobFinderPage: React.FC = () => {

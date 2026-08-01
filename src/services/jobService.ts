@@ -39,7 +39,7 @@ export const jobService = {
       body: JSON.stringify({
         position: params.position,
         location: params.location,
-        country: params.country || 'US',
+        country: params.country || 'IN',
         maxItems: params.maxItems ?? 20,
       }),
     });

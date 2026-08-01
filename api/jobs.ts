@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
     const position = String(body.position || '').trim();
     const location = String(body.location || '').trim();
-    const country = String(body.country || 'US').trim();
+    const country = String(body.country || 'IN').trim();
     const maxItems = Number(body.maxItems) || 20;
 
     if (!position) {
