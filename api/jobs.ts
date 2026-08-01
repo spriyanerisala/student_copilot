@@ -1,0 +1,36 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { searchIndeedJobs } from '../server/indeedJobs.js';
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 'no-store');
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed. Use POST.' });
+    return;
+  }
+
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
+    const position = String(body.position || '').trim();
+    const location = String(body.location || '').trim();
+    const country = String(body.country || 'IN').trim();
+    const maxItems = Number(body.maxItems) || 20;
+
+    if (!position) {
+      res.status(400).json({ error: 'position is required' });
+      return;
+    }
+
+    const result = await searchIndeedJobs({ position, location, country, maxItems });
+    res.status(200).json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to search jobs';
+    console.error('[api/jobs]', message);
+    res.status(500).json({ error: message });
+  }
+}
